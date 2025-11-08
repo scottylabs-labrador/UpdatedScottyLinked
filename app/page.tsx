@@ -10,7 +10,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ username = "Username" }) => {
   const [activeTab, setActiveTab] = useState<"research" | "jobs" | "projects">("research");
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-start pt-12 p-6">
       {/* Header / Logo */}
       <header className="flex flex-col items-center space-y-4 mb-12">
         <img
