@@ -4,10 +4,48 @@ import React, { useState } from "react";
 import Navbar from "./_components/navbar";
 import Image from "next/image";
 import logo from "./147268137.png";
+import Link from "next/link";
+import { posts } from "./data";
 
 interface LandingPageProps {
   username?: string;
 }
+
+
+const PostFeed: React.FC<{ activeTab: "research" | "jobs" | "projects" }> = ({
+  activeTab,
+}) => {
+  const feed = posts[activeTab] || [];
+
+  return (
+    <div className="w-full max-w-2xl mt-10 space-y-6">
+      {feed.length === 0 && (
+        <p className="text-center text-gray-500">No posts available.</p>
+      )}
+
+     {feed.map((post) => (
+      <Link key={post.id} href={`/post/${post.id}`}>
+        <div
+          className="bg-white cursor-pointer shadow-sm rounded-xl p-6 border border-gray-200 hover:shadow-md transition"
+        >
+          <div className="flex justify-between mb-2">
+            <span className="text-sm font-semibold text-blue-600">
+              {post.author}
+            </span>
+            <span className="text-sm text-gray-400">{post.timestamp}</span>
+          </div>
+
+          <h3 className="text-lg font-bold text-gray-800">{post.title}</h3>
+          <p className="text-gray-600 mt-2">{post.content}</p>
+        </div>
+      </Link>
+    ))}
+
+    </div>
+  );
+};
+
+
 
 const LandingPage: React.FC<LandingPageProps> = ({ username = "Username" }) => {
   const [activeTab, setActiveTab] = useState<"research" | "jobs" | "projects">("research");
@@ -54,6 +92,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ username = "Username" }) => {
           {activeTab === "jobs" && <p>Find and apply to job openings tailored for your interests.</p>}
           {activeTab === "projects" && <p>Showcase your projects or join others to build something great.</p>}
         </div>
+        <PostFeed activeTab={activeTab} />
       </div>
     </div>
   );
