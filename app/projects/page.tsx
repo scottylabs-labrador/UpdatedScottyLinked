@@ -4,10 +4,11 @@ import { getProjects } from "@/lib/db/projects";
 interface Project {
   id: number;
   title: string;
-  owner: string;
+  author: string;
   skills: string[];
   description: string;
   level: string;
+  type: string;
 }
 
 export default async function ProjectsPage() {

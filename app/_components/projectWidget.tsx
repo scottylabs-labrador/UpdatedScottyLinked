@@ -1,10 +1,11 @@
 interface Project {
   id: number;
   title: string;
-  owner: string;
+  author: string;
   skills: string[];
   description: string;
   level: string;
+  type: string;
 }
 
 interface Props {
@@ -16,20 +17,32 @@ export default function ProjectWidget(props: Props) {
   return (
     <div
       key={project.id}
-      className="rounded-2xl shadow-md bg-white p-6 transition-transform hover:scale-[1.02] hover:shadow-lg"
+      className="rounded-2xl shadow-lg bg-white p-6 transition-transform hover:scale-[1.02] hover:shadow-xl"
     >
       {project.title ? (
         <>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
             {project.title}
           </h2>
-          <p className="text-sm text-gray-500 mb-4">
-            Owned by <span className="font-medium">{project.owner}</span>
-          </p>
+          <div className="flex flex-row gap-8">
+            <div className="text-sm text-gray-500 mb-4">
+              Author:{" "}
+              <span className="font-medium text-gray-800">
+                {project.author}
+              </span>
+            </div>
+            <div className="text-sm text-gray-500 mb-4">
+              Project Type:{" "}
+              <span className="font-medium text-gray-800">
+                {" "}
+                {project.type}{" "}
+              </span>
+            </div>
+          </div>
 
           {project.skills.length > 0 && (
-            <div className="mb-4">
-              <p className="text-sm font-semibold text-gray-700 mb-2">
+            <div className="mb-4 flex flex-row">
+              <p className="text-sm font-semibold text-gray-700 mr-2">
                 Key Skills:
               </p>
               <div className="flex flex-wrap gap-2">

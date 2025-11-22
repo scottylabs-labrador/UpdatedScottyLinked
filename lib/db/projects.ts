@@ -26,10 +26,11 @@ export async function getPostsIDs(userId: number, global: boolean) {
 interface Project {
   id: number;
   title: string;
-  owner: string;
+  author: string;
   skills: string[];
   description: string;
   level: string;
+  type: string;
 }
 
 export async function getProjects(amount: number): Promise<Project[]> {
@@ -43,7 +44,6 @@ export async function getProjects(amount: number): Promise<Project[]> {
     console.error("Error fetching project:", error);
     return [];
   }
-
   return data; // this will be an object, not an array
 }
 
