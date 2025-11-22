@@ -1,116 +1,120 @@
 "use client";
 
 import React, { useState } from "react";
-import Navbar from "./_components/navbar";
 import Image from "next/image";
 import logo from "./147268137.png";
-import Link from "next/link";
-import { posts } from "./data";
-import { motion } from "framer-motion";
+import Feed from "./_components/feed";
+import Opportunities from "./_components/opportunities";
+import Network from "./_components/network";
+import ProfileView from "./_components/profileview";
+import { Post, Opportunity, Profile, UserProfile } from "../types";
 
 interface LandingPageProps {
   username?: string;
 }
 
-/* ----------------------------- PostFeed ----------------------------- */
-
-const PostFeed: React.FC<{ activeTab: "research" | "jobs" | "projects" }> = ({
-  activeTab,
-}) => {
-  const feed = posts[activeTab] || [];
-
-  return (
-    <motion.div
-      key={activeTab} // important for animation
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: "easeOut" }}
-      className="w-full max-w-2xl mt-10 space-y-6"
-    >
-      {feed.length === 0 && (
-        <p className="text-center text-gray-500">No posts available.</p>
-      )}
-
-      {feed.map((post) => (
-        <Link key={post.id} href={`/post/${post.id}`}>
-          <div className="bg-white cursor-pointer shadow-sm rounded-xl p-6 border border-gray-200 hover:shadow-md transition">
-            <div className="flex justify-between mb-2">
-              <span className="text-sm font-semibold text-blue-600">
-                {post.author}
-              </span>
-              <span className="text-sm text-gray-400">{post.timestamp}</span>
-            </div>
-
-            <h3 className="text-lg font-bold text-gray-800">{post.title}</h3>
-            <p className="text-gray-600 mt-2">{post.content}</p>
-          </div>
-        </Link>
-      ))}
-    </motion.div>
-  );
-};
-
-/* ----------------------------- Landing Page ----------------------------- */
-
 const LandingPage: React.FC<LandingPageProps> = ({ username = "Username" }) => {
   const [activeTab, setActiveTab] = useState<
-    "research" | "jobs" | "projects"
-  >("research");
+    "feed" | "opportunities" | "network" | "profile"
+  >("feed");
+
+  // Sample data
+  const samplePosts: Post[] = [
+    {
+      id: 1,
+      author: "Sarah Chen",
+      major: "Computer Science '25",
+      avatar: "SC",
+      timestamp: "2 hours ago",
+      content: "Just finished an amazing project on machine learning! Looking for collaborators for a startup idea. DM me if interested! 🚀",
+      likes: 24,
+      comments: 8
+    }
+  ];
+
+  const sampleOpportunities: Opportunity[] = [
+    {
+      id: 1,
+      title: "Software Engineering Intern",
+      company: "Meta",
+      type: "Internship",
+      location: "Menlo Park, CA",
+      posted: "2 days ago",
+      skills: ["React", "Python", "AWS"],
+      description: "Join our infrastructure team working on cutting-edge distributed systems."
+    }
+  ];
+
+  const sampleProfiles: Profile[] = [
+    {
+      id: 1,
+      name: "Emily Rodriguez",
+      avatar: "ER",
+      major: "Business Administration",
+      year: "Junior",
+      skills: ["Marketing", "Data Analysis", "Public Speaking"],
+      bio: "Passionate about tech entrepreneurship and social impact.",
+      connections: 234
+    }
+  ];
+
+  const sampleUserProfile: UserProfile = {
+    name: "Alex Johnson",
+    avatar: "AJ",
+    major: "Computer Science",
+    year: "Sophomore",
+    email: "ajohnson@andrew.cmu.edu",
+    skills: ["JavaScript", "Python", "React", "Node.js", "Machine Learning"],
+    bio: "Full-stack developer interested in AI and web technologies.",
+    connections: 156,
+    gpa: "3.8"
+  };
+
+  const NavButton = ({ label, tab }: { label: string; tab: "feed" | "opportunities" | "network" | "profile" }) => (
+    <button
+      onClick={() => setActiveTab(tab)}
+      className={`px-4 py-2 font-semibold transition-all text-sm ${
+        activeTab === tab
+          ? 'text-blue-600 border-b-2 border-blue-600'
+          : 'text-gray-600 hover:text-gray-900'
+      }`}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <>
-
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-start pt-12 p-6">
-        {/* Header */}
-        <header className="flex flex-col items-center space-y-4 mb-12">
-          <Image
-            src={logo}
-            alt="ScottyLinked Logo"
-            width={96}
-            height={96}
-            className="w-24 h-24 rounded-full shadow-md object-cover"
-          />
-          <h1 className="text-4xl font-bold text-gray-800">ScottyLinked</h1>
-          <p className="text-lg text-gray-600">
-            Welcome,{" "}
-            <span className="font-semibold text-blue-600">{username}</span>!
-          </p>
-        </header>
-
-        {/* Tabs */}
-        <div className="flex space-x-8 border-b border-gray-200 pb-2">
-          {["research", "jobs", "projects"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() =>
-                setActiveTab(tab as "research" | "jobs" | "projects")
-              }
-              className={`capitalize text-lg font-medium pb-2 border-b-4 transition-all duration-200 ${
-                activeTab === tab
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <Image 
+                src={logo} 
+                alt="ScottyLinked Logo" 
+                width={40}
+                height={40}
+                className="rounded-lg object-cover"
+              />
+              <span className="text-xl font-bold text-gray-900">ScottyLinked</span>
+            </div>
+            
+            <nav className="flex gap-1">
+              <NavButton label="Feed" tab="feed" />
+              <NavButton label="Opportunities" tab="opportunities" />
+              <NavButton label="Network" tab="network" />
+              <NavButton label="Profile" tab="profile" />
+            </nav>
+          </div>
         </div>
+      </header>
 
-        {/* Tab Description */}
-        <div className="mt-6 text-center text-gray-700 max-w-xl">
-          {activeTab === "research" && (
-            <p>Explore current research opportunities and collaborations.</p>
-          )}
-          {activeTab === "jobs" && (
-            <p>Find and apply to job openings tailored for your interests.</p>
-          )}
-          {activeTab === "projects" && (
-            <p>Showcase your projects or join others to build something great.</p>
-          )}
-        </div>
-
-        {/* Post Feed */}
-        <PostFeed activeTab={activeTab} />
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-start pt-6 p-6">
+        {/* Tab Content */}
+        {activeTab === "feed" && <Feed posts={samplePosts} loading={false} />}
+        {activeTab === "opportunities" && <Opportunities opportunities={sampleOpportunities} loading={false} />}
+        {activeTab === "network" && <Network profiles={sampleProfiles} loading={false} />}
+        {activeTab === "profile" && <ProfileView user={sampleUserProfile} loading={false} />}
       </div>
     </>
   );
