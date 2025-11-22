@@ -6,7 +6,7 @@ interface Research {
   id: number;
   position: string;
   field: string;
-  leadType: string; // Professor-led, PhD-led, Student-led
+  leadType: string; // PhD-led, Student-led
   experienceNeeded: string;
   skills: string[];
   experience: string; // e.g., "1-2 years"
@@ -18,8 +18,8 @@ export default function ResearchPage() {
       id: 1,
       position: "Machine Learning Research Assistant",
       field: "Computer Vision / Medical Imaging",
-      leadType: "Professor-led",
-      experienceNeeded: "Familiarity with ML frameworks and Python",
+      leadType: "PhD-led",
+      experienceNeeded: "Familiarity with ML frameworks and Python, Sophmore or older prefered",
       skills: ["Python", "PyTorch", "Data Analysis"],
       experience: "1+ years",
     },
