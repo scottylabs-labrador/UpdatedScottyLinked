@@ -29,7 +29,7 @@ export async function getPostInfo(id: string) {
     .select("*")
     .eq("id", id)
     .single(); // ensures only one row is returned
-
+  
   if (error) {
     console.error("Error fetching post:", error);
     return null;
