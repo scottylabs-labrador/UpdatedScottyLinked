@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Opportunity } from '../../types';
+import { Opportunity } from '@/lib/types';
 
 interface OpportunitiesProps {
   opportunities: Opportunity[];
@@ -20,9 +20,9 @@ export default function Opportunities({ opportunities, loading }: OpportunitiesP
         <input
           type="text"
           placeholder="Search opportunities..."
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
         />
-        <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black">
           <option>All Types</option>
           <option>Internships</option>
           <option>Research</option>

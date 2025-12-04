@@ -1,18 +1,21 @@
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { supabase } from "@/lib/supabaseClient";
 
-export async function getConnectedUserIds(userId: Number, accepted: Boolean) {
-  const { data, error } = await supabaseAdmin
+export async function getConnectedUserIds(userId: number, accepted: boolean) {
+  const { data, error } = await supabase
     .from("connections")
-    .select("requesterId, receiverId, status")
-    .or(`requesterId.eq.${userId},receiverId.eq.${userId}`)
+    .select("requester_id, reciever_id, status")
+    .or(`requester_id.eq.${userId},reciever_id.eq.${userId}`)
     .eq("status", accepted ? "accepted" : "pending");
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("Error fetching connections:", error);
+    return [];
+  }
   if (!data) return [];
 
   // Return just the other user's IDs
-  const connectedIds = data.map((conn) =>
-    conn.requesterId === userId ? conn.receiverId : conn.requesterId
+  const connectedIds = data.map((conn: any) =>
+    conn.requester_id === userId ? conn.reciever_id : conn.requester_id
   );
 
   // remove duplicates
@@ -20,19 +23,19 @@ export async function getConnectedUserIds(userId: Number, accepted: Boolean) {
 }
 
 export async function createConnection(
-  requesterId: Number,
-  receiverId: Number
+  requesterId: number,
+  receiverId: number
 ) {
   if (requesterId === receiverId) {
     throw new Error("Users cannot connect to themselves.");
   }
 
   // Check if connection already exists
-  const { data: existing } = await supabaseAdmin
+  const { data: existing } = await supabase
     .from("connections")
     .select("id, status")
     .or(
-      `and(senderId.eq.${requesterId},receiverId.eq.${receiverId}),and(senderId.eq.${receiverId},receiverId.eq.${requesterId})`
+      `and(requester_id.eq.${requesterId},reciever_id.eq.${receiverId}),and(requester_id.eq.${receiverId},reciever_id.eq.${requesterId})`
     )
     .maybeSingle();
 
@@ -43,12 +46,12 @@ export async function createConnection(
   }
 
   // Create new connection record
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from("connections")
     .insert([
       {
-        senderId: requesterId,
-        receiverId: receiverId,
+        requester_id: requesterId,
+        reciever_id: receiverId,
         status: "pending",
       },
     ])

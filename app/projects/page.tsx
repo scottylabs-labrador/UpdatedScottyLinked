@@ -1,15 +1,6 @@
 import ProjectWidget from "../_components/projectWidget";
 import { getProjects } from "@/lib/db/projects";
-
-interface Project {
-  id: number;
-  title: string;
-  author: string;
-  skills: string[];
-  description: string;
-  level: string;
-  type: string;
-}
+import { Project } from "@/lib/types";
 
 export default async function ProjectsPage() {
   let projects: Project[] = await getProjects(5);

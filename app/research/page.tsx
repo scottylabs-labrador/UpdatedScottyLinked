@@ -1,16 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-
-interface Research {
-  id: number;
-  position: string;
-  field: string;
-  leadType: string; // PhD-led, Student-led
-  experienceNeeded: string;
-  skills: string[];
-  experience: string; // e.g., "1-2 years"
-}
+import { Research } from "@/lib/types";
 
 export default function ResearchPage() {
   const [researches, setResearches] = useState<Research[]>([

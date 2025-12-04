@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { getConnectedUserIds } from "./connections";
+import { Project, NewPost, Opportunity } from "@/lib/types";
 
 export async function getPostsIDs(userId: number, global: boolean) {
   let connectedIds = await getConnectedUserIds(userId, true);
@@ -23,16 +24,6 @@ export async function getPostsIDs(userId: number, global: boolean) {
   return data.map((row) => row.id);
 }
 
-interface Project {
-  id: number;
-  title: string;
-  author: string;
-  skills: string[];
-  description: string;
-  level: string;
-  type: string;
-}
-
 export async function getProjects(amount: number): Promise<Project[]> {
   const { data, error } = await supabase
     .from("projects")
@@ -46,14 +37,6 @@ export async function getProjects(amount: number): Promise<Project[]> {
   }
   return data; // this will be an object, not an array
 }
-
-type NewPost = {
-  title: string;
-  content: string;
-  authorId: string;
-  tags?: string[];
-  audience: string;
-};
 
 export async function createPost(post: NewPost) {
   const { data, error } = await supabase

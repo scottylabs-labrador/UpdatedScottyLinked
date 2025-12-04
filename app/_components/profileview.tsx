@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Avatar from './Avatar';
-import { UserProfile } from '../../types';
+import { UserProfile } from '@/lib/types';
 
 interface ProfileViewProps {
   user: UserProfile | null;

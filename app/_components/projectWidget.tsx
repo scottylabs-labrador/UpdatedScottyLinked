@@ -1,12 +1,4 @@
-interface Project {
-  id: number;
-  title: string;
-  author: string;
-  skills: string[];
-  description: string;
-  level: string;
-  type: string;
-}
+import { Project } from "@/lib/types";
 
 interface Props {
   project: Project;
