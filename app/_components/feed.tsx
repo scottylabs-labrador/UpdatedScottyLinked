@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import Avatar from "./Avatar";
 import { FeedPost } from "@/lib/types";
 import { createPost } from "@/lib/api";
@@ -11,6 +12,8 @@ interface FeedProps {
   onPostCreated?: () => void;
   currentUserId?: number | null;
 }
+
+type LikeUpdate = { likes: number; liked: boolean };
 
 export default function Feed({
   posts,
@@ -23,6 +26,50 @@ export default function Feed({
   const [postTags, setPostTags] = useState("");
   const [postVisibility, setPostVisibility] = useState("public");
   const [isPosting, setIsPosting] = useState(false);
+  const [likeUpdates, setLikeUpdates] = useState<Record<number, LikeUpdate>>({});
+  const [likingId, setLikingId] = useState<number | null>(null);
+  const [sharedId, setSharedId] = useState<number | null>(null);
+
+  const getPostLikeState = (post: FeedPost) => {
+    const u = likeUpdates[post.id];
+    return {
+      likes: u?.likes ?? post.likes,
+      liked: u?.liked ?? post.liked ?? false,
+    };
+  };
+
+  const handleLike = async (post: FeedPost) => {
+    if (currentUserId == null || likingId != null) return;
+    setLikingId(post.id);
+    try {
+      const res = await fetch(`/api/posts/${post.id}/like`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ liked: !(getPostLikeState(post).liked) }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLikeUpdates((prev) => ({
+          ...prev,
+          [post.id]: { likes: data.likeCount, liked: data.liked },
+        }));
+      }
+    } finally {
+      setLikingId(null);
+    }
+  };
+
+  const handleShare = async (postId: number) => {
+    const url = typeof window !== "undefined" ? `${window.location.origin}/post/${postId}` : "";
+    try {
+      await navigator.clipboard.writeText(url);
+      setSharedId(postId);
+      setTimeout(() => setSharedId(null), 2000);
+    } catch {
+      window.open(url, "_blank");
+    }
+  };
 
   const handlePost = async () => {
     if (!postContent.trim()) {
@@ -137,64 +184,107 @@ export default function Feed({
         </div>
       ) : (
         <div className="space-y-4">
-          {posts.map((post) => (
-            <div key={post.id} className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-start gap-3">
-                <Avatar text={post.avatar} size="sm" />
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {post.author}
-                      </h3>
-                      <p className="text-sm text-gray-600">{post.major}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm text-gray-500">
-                        {post.timestamp}
-                      </span>
-                      {post.audience && (
-                        <span className="ml-2 text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
-                          {post.audience === "public" && "🌍 Public"}
-                          {post.audience === "connections" && "👥 Connections"}
-                          {post.audience === "private" && "🔒 Private"}
+          {posts.map((post) => {
+            const { likes, liked } = getPostLikeState(post);
+            return (
+              <div key={post.id} className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-start gap-3">
+                  {post.authorId != null ? (
+                    <Link href={`/profile/${post.authorId}`} className="shrink-0">
+                      <Avatar
+                        text={post.avatar}
+                        size="sm"
+                        imageUrl={post.authorPhotoURL}
+                      />
+                    </Link>
+                  ) : (
+                    <Avatar
+                      text={post.avatar}
+                      size="sm"
+                      imageUrl={post.authorPhotoURL}
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        {post.authorId != null ? (
+                          <Link
+                            href={`/profile/${post.authorId}`}
+                            className="font-semibold text-gray-900 hover:text-blue-600 hover:underline"
+                          >
+                            {post.author}
+                          </Link>
+                        ) : (
+                          <h3 className="font-semibold text-gray-900">
+                            {post.author}
+                          </h3>
+                        )}
+                        <p className="text-sm text-gray-600">{post.major}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm text-gray-500">
+                          {post.timestamp}
                         </span>
+                        {post.audience && (
+                          <span className="ml-2 text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                            {post.audience === "public" && "🌍 Public"}
+                            {post.audience === "connections" && "👥 Connections"}
+                            {post.audience === "private" && "🔒 Private"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <Link
+                      href={`/post/${post.id}`}
+                      className="block mt-2 hover:opacity-90 transition"
+                    >
+                      {post.title && (
+                        <h4 className="text-lg font-semibold text-gray-900">
+                          {post.title}
+                        </h4>
                       )}
+                      <p className="mt-1 text-gray-800 line-clamp-3">{post.content}</p>
+                      {post.tags && post.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {post.tags.slice(0, 4).map((tag, index) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </Link>
+                    <div className="flex gap-6 mt-4 text-sm text-gray-600">
+                      <button
+                        type="button"
+                        onClick={() => handleLike(post)}
+                        disabled={currentUserId == null || likingId === post.id}
+                        className={`transition disabled:opacity-50 ${liked ? "text-red-500" : "hover:text-red-500"}`}
+                      >
+                        {liked ? "❤️" : "🤍"} {likes} {likes === 1 ? "Like" : "Likes"}
+                      </button>
+                      <Link
+                        href={`/post/${post.id}`}
+                        className="hover:text-blue-600 transition"
+                      >
+                        💬 {post.comments} {post.comments === 1 ? "Comment" : "Comments"}
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleShare(post.id)}
+                        className="hover:text-blue-600 transition"
+                      >
+                        🔗 {sharedId === post.id ? "Copied!" : "Share"}
+                      </button>
                     </div>
-                  </div>
-                  {post.title && (
-                    <h4 className="mt-3 text-lg font-semibold text-gray-900">
-                      {post.title}
-                    </h4>
-                  )}
-                  <p className="mt-3 text-gray-800">{post.content}</p>
-                  {post.tags && post.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {post.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex gap-6 mt-4 text-sm text-gray-600">
-                    <button className="hover:text-blue-600 transition">
-                      ❤️ {post.likes} Likes
-                    </button>
-                    <button className="hover:text-blue-600 transition">
-                      💬 {post.comments} Comments
-                    </button>
-                    <button className="hover:text-blue-600 transition">
-                      🔗 Share
-                    </button>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

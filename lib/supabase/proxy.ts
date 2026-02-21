@@ -27,7 +27,18 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+  const isAuthenticated = !!data?.claims?.sub;
+  const path = request.nextUrl.pathname;
+  const isPublicRoute =
+    path === "/login" ||
+    path.startsWith("/auth/");
+
+  if (!isAuthenticated && !isPublicRoute) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    return NextResponse.redirect(loginUrl);
+  }
 
   return supabaseResponse;
 }

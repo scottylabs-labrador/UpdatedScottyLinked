@@ -220,9 +220,10 @@ export async function getProfiles(
         id: user.id,
         name: user.fullName,
         avatar: getAvatarInitials(user.fullName),
+        photoURL: user.photoURL ?? null,
         major: user.major || "Undeclared",
         year: user.year || "Unknown",
-        skills: [], // Skills not in users table schema, empty for now
+        skills: [],
         bio: user.bio || "",
         connections: connectionCount,
       };
@@ -266,13 +267,14 @@ export async function getUserProfile(
     return {
       name: user.fullName,
       avatar: getAvatarInitials(user.fullName),
+      photoURL: user.photoURL ?? null,
       major: user.major || "Undeclared",
       year: user.year || "Unknown",
       email: email,
-      skills: [], // Skills not in users table schema, empty for now
+      skills: [],
       bio: user.bio || "",
       connections: connectionCount,
-      gpa: "N/A", // GPA not in schema
+      gpa: "N/A",
     };
   } catch (error) {
     console.error("Error in getUserProfile:", error);

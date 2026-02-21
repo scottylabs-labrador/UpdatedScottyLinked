@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
-import logo from "./147268137.png";
+import { useSearchParams } from "next/navigation";
 import Feed from "./_components/feed";
 import Opportunities from "./_components/opportunities";
 import Network from "./_components/network";
 import ProfileView from "./_components/profileview";
+import AppNavbar from "./_components/AppNavbar";
 import { FeedPost, Opportunity, Profile, UserProfile } from "@/lib/types";
 import {
   fetchPosts,
@@ -16,7 +16,6 @@ import {
 } from "@/lib/api";
 import { getConnectedUserIds } from "@/lib/db/connections";
 import { createClient } from "@/lib/supabase/client";
-import { signInWithGoogle, signOut } from "@/app/auth/login/actions";
 
 interface AppUser {
   id: number;
@@ -30,9 +29,12 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ username = "Username" }) => {
-  const [activeTab, setActiveTab] = useState<
-    "feed" | "opportunities" | "network" | "profile"
-  >("feed");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab: "feed" | "opportunities" | "network" | "profile" =
+    tabParam === "opportunities" || tabParam === "network" || tabParam === "profile"
+      ? tabParam
+      : "feed";
 
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
@@ -95,25 +97,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ username = "Username" }) => {
     loadData();
   }, [currentUserId]);
 
-  const NavButton = ({
-    label,
-    tab,
-  }: {
-    label: string;
-    tab: "feed" | "opportunities" | "network" | "profile";
-  }) => (
-    <button
-      onClick={() => setActiveTab(tab)}
-      className={`px-4 py-2 font-semibold transition-all text-sm ${
-        activeTab === tab
-          ? "text-blue-600 border-b-2 border-blue-600"
-          : "text-gray-600 hover:text-gray-900"
-      }`}
-    >
-      {label}
-    </button>
-  );
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const error = params.get("error");
@@ -131,18 +114,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ username = "Username" }) => {
     }
   }, []);
 
-  const handleGoogleSignIn = async () => {
-    const result = await signInWithGoogle();
-    if (result.url) window.location.href = result.url;
-    else if (result.error) setAuthError(result.error);
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
-    setAppUser(null);
-    loadData();
-  };
-
   return (
     <>
       {authError && (
@@ -157,74 +128,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ username = "Username" }) => {
           </button>
         </div>
       )}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <Image
-                src={logo}
-                alt="ScottyLinked Logo"
-                width={40}
-                height={40}
-                className="rounded-lg object-cover"
-              />
-              <span className="text-xl font-bold text-gray-900">
-                ScottyLinked
-              </span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <nav className="flex gap-1">
-                <NavButton label="Feed" tab="feed" />
-                <NavButton label="Opportunities" tab="opportunities" />
-                <NavButton label="Network" tab="network" />
-                <NavButton label="Profile" tab="profile" />
-              </nav>
-              <div className="flex items-center gap-2">
-                {authLoading ? (
-                  <span className="text-sm text-gray-500">Loading...</span>
-                ) : appUser ? (
-                  <>
-                    <div className="flex items-center gap-2">
-                      {appUser.photoURL ? (
-                        <Image
-                          src={appUser.photoURL}
-                          alt=""
-                          width={32}
-                          height={32}
-                          className="rounded-full"
-                        />
-                      ) : (
-                        <span className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-medium text-gray-600">
-                          {appUser.fullName?.slice(0, 2).toUpperCase() ?? "?"}
-                        </span>
-                      )}
-                      <span className="text-sm font-medium text-gray-700">
-                        {appUser.fullName}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleSignOut}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-                    >
-                      Sign out
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleGoogleSignIn}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-                  >
-                    Login with Google
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppNavbar />
 
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-start pt-6 p-6">
         {/* Tab Content */}
@@ -244,11 +148,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ username = "Username" }) => {
             profiles={profiles}
             loading={loading}
             connectedIds={connectedIds}
+            currentUserId={currentUserId}
             onConnectionCreated={loadData}
           />
         )}
         {activeTab === "profile" && (
-          <ProfileView user={userProfile} loading={loading} />
+          <ProfileView
+            user={userProfile}
+            loading={loading}
+            onProfileUpdated={() => {
+              loadMe();
+              loadData();
+            }}
+          />
         )}
       </div>
       <footer className="py-4 text-center">

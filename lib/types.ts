@@ -92,6 +92,8 @@ export interface PostImage {
 export interface FeedPost {
   id: number;
   author: string;
+  authorId?: number;
+  authorPhotoURL?: string | null;
   major: string;
   avatar: string;
   timestamp: string;
@@ -101,6 +103,8 @@ export interface FeedPost {
   audience?: string;
   likes: number;
   comments: number;
+  /** True if current user has liked this post (only set when fetched with user context). */
+  liked?: boolean;
 }
 
 /**
@@ -126,6 +130,7 @@ export interface Profile {
   id: number;
   name: string;
   avatar: string;
+  photoURL?: string | null;
   major: string;
   year: string;
   skills: string[];
@@ -140,6 +145,7 @@ export interface Profile {
 export interface UserProfile {
   name: string;
   avatar: string;
+  photoURL?: string | null;
   major: string;
   year: string;
   email: string;

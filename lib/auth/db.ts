@@ -89,6 +89,48 @@ export async function createAppUser(params: {
 }
 
 /**
+ * Update an app user by id (server-only, uses admin client).
+ * Only provided fields are updated. Uses DB column names.
+ */
+export async function updateAppUser(
+  userId: number,
+  updates: {
+    fullName?: string;
+    major?: string | null;
+    year?: string | null;
+    bio?: string | null;
+    photoURL?: string | null;
+    bannerURL?: string | null;
+  }
+): Promise<User | null> {
+  if (!supabaseAdmin) return null;
+
+  const row: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (updates.fullName !== undefined) row.fullname = updates.fullName;
+  if (updates.major !== undefined) row.major = updates.major;
+  if (updates.year !== undefined) row.year = updates.year;
+  if (updates.bio !== undefined) row.bio = updates.bio;
+  if (updates.photoURL !== undefined) row.photourl = updates.photoURL;
+  if (updates.bannerURL !== undefined) row.bannerurl = updates.bannerURL;
+
+  const { data, error } = await supabaseAdmin
+    .from("users")
+    .update(row)
+    .eq("id", userId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating app user:", error);
+    return null;
+  }
+
+  return rowToUser(data as Record<string, unknown>);
+}
+
+/**
  * Ensure an app user exists for the given handle; create if unseen.
  * Returns the user (existing or newly created).
  */
