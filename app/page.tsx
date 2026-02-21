@@ -177,4 +177,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ username = "Username" }) => {
   );
 };
 
-export default LandingPage;
+function PageFallback() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
+      <p className="text-gray-500">Loading...</p>
+    </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <React.Suspense fallback={<PageFallback />}>
+      <LandingPage />
+    </React.Suspense>
+  );
+}
