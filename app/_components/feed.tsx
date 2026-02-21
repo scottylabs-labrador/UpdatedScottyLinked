@@ -9,11 +9,15 @@ interface FeedProps {
   posts: FeedPost[];
   loading: boolean;
   onPostCreated?: () => void;
+  currentUserId?: number | null;
 }
 
-const CURRENT_USER_ID = 1; // User is signed in as ID 1
-
-export default function Feed({ posts, loading, onPostCreated }: FeedProps) {
+export default function Feed({
+  posts,
+  loading,
+  onPostCreated,
+  currentUserId = 1,
+}: FeedProps) {
   const [postTitle, setPostTitle] = useState("");
   const [postContent, setPostContent] = useState("");
   const [postTags, setPostTags] = useState("");
@@ -38,7 +42,7 @@ export default function Feed({ posts, loading, onPostCreated }: FeedProps) {
         postContent,
         tags,
         postVisibility,
-        CURRENT_USER_ID
+        currentUserId ?? 1
       );
 
       if (success) {
@@ -64,7 +68,8 @@ export default function Feed({ posts, loading, onPostCreated }: FeedProps) {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Post Creation Box */}
+      {/* Post Creation Box - only when signed in */}
+      {currentUserId != null && (
       <div className="mb-6 bg-white rounded-lg shadow p-4">
         <div className="space-y-3">
           {/* Title Field */}
@@ -123,6 +128,7 @@ export default function Feed({ posts, loading, onPostCreated }: FeedProps) {
           </button>
         </div>
       </div>
+      )}
 
       {/* Posts List */}
       {posts.length === 0 ? (

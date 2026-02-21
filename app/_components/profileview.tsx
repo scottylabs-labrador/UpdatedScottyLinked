@@ -17,7 +17,7 @@ export default function ProfileView({ user, loading }: ProfileViewProps) {
   if (!user) {
     return (
       <div className="max-w-3xl mx-auto bg-white rounded-lg shadow p-8 text-center text-gray-500">
-        Unable to load profile. Please try again.
+        Sign in to view your profile.
       </div>
     );
   }

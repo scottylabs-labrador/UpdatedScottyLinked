@@ -7,14 +7,14 @@ export async function getPostsIDs(userId: number, global: boolean) {
 
   if (connectedIds.length === 0) connectedIds = [-1];
 
-  let query = supabase.from("posts").select("id, authorID, audience"); // only return IDs
+  let query = supabase.from("posts").select("id, authorid, audience");
 
   if (global) {
     query = query.or(
-      `authorId.in.(${connectedIds.join(",")}),audience.eq.public`
+      `authorid.in.(${connectedIds.join(",")}),audience.eq.public`
     );
   } else {
-    query = query.in("authorId", connectedIds);
+    query = query.in("authorid", connectedIds);
   }
 
   const { data, error } = await query;
@@ -39,9 +39,19 @@ export async function getProjects(amount: number): Promise<Project[]> {
 }
 
 export async function createPost(post: NewPost) {
+  const authorId =
+    typeof post.authorId === "string"
+      ? parseInt(post.authorId, 10)
+      : post.authorId;
   const { data, error } = await supabase
     .from("posts")
-    .insert(post)
+    .insert({
+      title: post.title,
+      content: post.content,
+      authorid: authorId,
+      tags: post.tags ?? [],
+      audience: post.audience,
+    })
     .select()
     .single();
 

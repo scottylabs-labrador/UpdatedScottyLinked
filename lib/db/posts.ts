@@ -11,15 +11,16 @@ export async function createPost(post: NewPost): Promise<Post | null> {
     const title =
       post.title || post.content.substring(0, 50).trim() || "New Post";
 
+    const authorId =
+      typeof post.authorId === "string"
+        ? parseInt(post.authorId, 10)
+        : post.authorId;
     const { data, error } = await supabase
       .from("posts")
       .insert({
         title: title,
         content: post.content,
-        authorID:
-          typeof post.authorId === "string"
-            ? parseInt(post.authorId, 10)
-            : post.authorId,
+        authorid: authorId,
         tags: post.tags || [],
         audience: post.audience,
       })
@@ -66,29 +67,41 @@ export async function getFeedPosts(
       return [];
     }
 
-    // Get all unique author IDs
-    const authorIds = [...new Set(posts.map((post) => post.authorID))];
+    const postRow = (p: Record<string, unknown>) => ({
+      id: p.id as number,
+      authorID: (p.authorid as number) ?? (p.authorID as number),
+      audience: (p.audience as string) ?? "",
+      title: (p.title as string) ?? "",
+      content: (p.content as string) ?? "",
+      tags: (p.tags as string[]) ?? [],
+      created_at: (p.created_at as string) ?? "",
+    });
+
+    // Get all unique author IDs (DB column may be authorid)
+    const authorIds = [...new Set(posts.map((p) => postRow(p as Record<string, unknown>).authorID))];
     const authors = await getUsersByIds(authorIds);
 
-    // Get comment counts for each post
-    const postIds = posts.map((post) => post.id);
+    // Get comment counts for each post (DB table may be postcomments, column postid)
+    const postIds = posts.map((p) => (p as Record<string, unknown>).id as number);
     const { data: commentsData } = await supabase
-      .from("postComments")
-      .select("postID")
-      .in("postID", postIds);
+      .from("postcomments")
+      .select("postid")
+      .in("postid", postIds);
 
     const commentCounts = new Map<number, number>();
     if (commentsData) {
-      commentsData.forEach((comment) => {
+      (commentsData as Record<string, unknown>[]).forEach((comment) => {
+        const postId = (comment.postid as number) ?? (comment.postID as number);
         commentCounts.set(
-          comment.postID,
-          (commentCounts.get(comment.postID) || 0) + 1
+          postId,
+          (commentCounts.get(postId) || 0) + 1
         );
       });
     }
 
     // Transform posts to FeedPost format
-    const feedPosts: FeedPost[] = posts.map((post: Post) => {
+    const feedPosts: FeedPost[] = posts.map((p) => {
+      const post = postRow(p as Record<string, unknown>);
       const author = authors.find((user) => user.id === post.authorID);
       const comments = commentCounts.get(post.id) || 0;
 

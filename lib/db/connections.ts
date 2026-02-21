@@ -1,6 +1,10 @@
 import { supabase } from "@/lib/supabaseClient";
 
-export async function getConnectedUserIds(userId: number, accepted: boolean) {
+export async function getConnectedUserIds(
+  userId: number | null,
+  accepted: boolean
+) {
+  if (userId == null) return [];
   const { data, error } = await supabase
     .from("connections")
     .select("requester_id, reciever_id, status")
