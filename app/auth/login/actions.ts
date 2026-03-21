@@ -1,20 +1,15 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getAppBaseUrl } from "@/lib/app-url";
 
 /**
- * Base URL of the app (must match Supabase Dashboard → Auth → URL Configuration → Redirect URLs).
- * Set NEXT_PUBLIC_APP_URL in .env.local (e.g. http://localhost:3000 or https://yourdomain.com).
+ * Base URL must match Supabase Dashboard → Auth → URL Configuration → Redirect URLs.
+ * Set NEXT_PUBLIC_APP_URL for custom domains; on Vercel, VERCEL_URL is used when unset.
  */
-function getAppUrl(): string {
-  const url = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (url) return url.replace(/\/$/, "");
-  return "http://localhost:3000";
-}
-
 export async function signInWithGoogle() {
   const supabase = await createClient();
-  const redirectTo = `${getAppUrl()}/auth/callback`;
+  const redirectTo = `${getAppBaseUrl()}/auth/callback`;
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",

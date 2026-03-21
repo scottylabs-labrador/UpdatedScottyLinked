@@ -52,9 +52,12 @@ export interface PostCommentWithAuthor {
 /**
  * Create a new post in the database
  */
-export async function createPost(post: NewPost): Promise<Post | null> {
+export async function createPost(
+  post: NewPost,
+  sb?: SupabaseClient
+): Promise<Post | null> {
+  const client = sb ?? supabase;
   try {
-    // Generate a title from content if not provided
     const title =
       post.title || post.content.substring(0, 50).trim() || "New Post";
 
@@ -62,7 +65,7 @@ export async function createPost(post: NewPost): Promise<Post | null> {
       typeof post.authorId === "string"
         ? parseInt(post.authorId, 10)
         : post.authorId;
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("posts")
       .insert({
         title: title,
@@ -86,38 +89,62 @@ export async function createPost(post: NewPost): Promise<Post | null> {
   }
 }
 
+function canViewerSeePost(
+  audience: string,
+  authorId: number,
+  viewerId: number | null,
+  connectedToViewer: Set<number>
+): boolean {
+  if (audience === "public") return true;
+  if (viewerId == null) return false;
+  if (audience === "private") return authorId === viewerId;
+  if (audience === "connections") {
+    return authorId === viewerId || connectedToViewer.has(authorId);
+  }
+  return false;
+}
+
 /**
- * Get posts for feed with user information
- * Fetches posts visible to the user and transforms them to FeedPost format
+ * Get posts for feed with user information.
+ * Public posts: everyone. Connections-only: viewer must be connected to author (or be author).
+ * Private: author only.
  */
 export async function getFeedPosts(
   userId: number | null = null,
-  limit: number = 50
+  connectedUserIds: number[] = [],
+  limit: number = 50,
+  hiddenAuthorIds: number[] = []
 ): Promise<FeedPost[]> {
   try {
-    // Get all public posts, or posts from connections if userId is provided
-    let query = supabase.from("posts").select("*");
-
-    // For now, just get public posts (connections require admin access)
-    query = query.eq("audience", "public");
-
-    const { data: posts, error } = await query
+    const connectedSet = new Set(connectedUserIds);
+    const hiddenSet = new Set(hiddenAuthorIds);
+    const { data: rawPosts, error } = await supabase
+      .from("posts")
+      .select("*")
       .order("created_at", { ascending: false })
-      .limit(limit);
+      .limit(300);
 
     if (error) {
       console.error("Error fetching posts:", error);
       return [];
     }
 
-    if (!posts || posts.length === 0) {
+    const posts = (rawPosts ?? [])
+      .map((p) => postRow(p as Record<string, unknown>))
+      .filter((p) =>
+        canViewerSeePost(p.audience, p.authorID, userId, connectedSet)
+      )
+      .filter((p) => !hiddenSet.has(p.authorID))
+      .slice(0, limit);
+
+    if (posts.length === 0) {
       return [];
     }
 
-    const authorIds = [...new Set(posts.map((p) => postRow(p as Record<string, unknown>).authorID))];
+    const authorIds = [...new Set(posts.map((p) => p.authorID))];
     const authors = await getUsersByIds(authorIds);
 
-    const postIds = posts.map((p) => (p as Record<string, unknown>).id as number);
+    const postIds = posts.map((p) => p.id);
     const { data: commentsData } = await supabase
       .from("postcomments")
       .select("postid")
@@ -151,8 +178,7 @@ export async function getFeedPosts(
       // postlikes table may not exist yet
     }
 
-    const feedPosts: FeedPost[] = posts.map((p) => {
-      const post = postRow(p as Record<string, unknown>);
+    const feedPosts: FeedPost[] = posts.map((post) => {
       const author = authors.find((user) => user.id === post.authorID);
       return {
         id: post.id,
@@ -184,7 +210,8 @@ export async function getFeedPosts(
  */
 export async function getPostById(
   postId: number,
-  currentUserId: number | null = null
+  currentUserId: number | null = null,
+  connectedUserIds: number[] = []
 ): Promise<FeedPost | null> {
   const { data: row, error } = await supabase
     .from("posts")
@@ -195,6 +222,18 @@ export async function getPostById(
   if (error || !row) return null;
 
   const post = postRow(row as Record<string, unknown>);
+  const connectedSet = new Set(connectedUserIds);
+  if (
+    !canViewerSeePost(
+      post.audience,
+      post.authorID,
+      currentUserId,
+      connectedSet
+    )
+  ) {
+    return null;
+  }
+
   const author = await getUserById(post.authorID);
   if (!author) return null;
 

@@ -15,6 +15,10 @@ export interface User {
   bio: string | null;
   created_at: string;
   updated_at: string | null;
+  /** Present when loaded from DB (moderation). */
+  isModerator?: boolean;
+  /** Profile skill tags (discovery). */
+  skills?: string[];
 }
 
 /**
@@ -120,6 +124,10 @@ export interface Opportunity {
   posted: string;
   skills: string[];
   description: string;
+  /** Project owner app user id. */
+  authorId?: number;
+  /** Legacy; in-app interest replaces mailto. */
+  contactEmail?: string | null;
 }
 
 /**

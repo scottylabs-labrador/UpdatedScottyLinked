@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getHandleFromEmail, isAndrewEmail, getAppUserByHandle } from "@/lib/auth/db";
+import { getConnectedUserIdsAdmin } from "@/lib/db/connections";
 import { getPostById } from "@/lib/db/posts";
 import { NextResponse } from "next/server";
 
@@ -25,7 +26,11 @@ export async function GET(
   }
 
   const currentUserId = await getCurrentAppUserId();
-  const post = await getPostById(id, currentUserId);
+  const connectedIds =
+    currentUserId != null
+      ? await getConnectedUserIdsAdmin(currentUserId)
+      : [];
+  const post = await getPostById(id, currentUserId, connectedIds);
   if (!post) {
     return NextResponse.json({ error: "Post not found" }, { status: 404 });
   }

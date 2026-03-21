@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import Avatar from "@/app/_components/Avatar";
 import AppNavbar from "@/app/_components/AppNavbar";
+import ReportModal from "@/app/_components/ReportModal";
 import type { FeedPost } from "@/lib/types";
 import type { PostCommentWithAuthor } from "@/lib/db/posts";
 
@@ -34,6 +35,7 @@ export default function PostPage() {
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [liking, setLiking] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const loadPost = useCallback(async () => {
     if (isNaN(id)) return;
@@ -141,6 +143,12 @@ export default function PostPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ReportModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        targetType="post"
+        targetId={id}
+      />
       <AppNavbar />
       <div className="max-w-5xl mx-auto py-6 px-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col md:flex-row min-h-[480px]">
@@ -186,7 +194,7 @@ export default function PostPage() {
                 </div>
               )}
             </div>
-            <div className="p-4 pt-0 flex gap-6 text-sm border-t border-gray-100">
+            <div className="p-4 pt-0 flex flex-wrap gap-4 text-sm border-t border-gray-100 items-center">
               <button
                 type="button"
                 onClick={handleLike}
@@ -200,6 +208,17 @@ export default function PostPage() {
                 <span className="text-lg">💬</span>
                 {post.comments} {post.comments === 1 ? "comment" : "comments"}
               </span>
+              {currentUserId != null &&
+                post.authorId != null &&
+                currentUserId !== post.authorId && (
+                  <button
+                    type="button"
+                    onClick={() => setReportOpen(true)}
+                    className="text-red-700 hover:underline ml-auto sm:ml-0"
+                  >
+                    Report post
+                  </button>
+                )}
             </div>
           </div>
 

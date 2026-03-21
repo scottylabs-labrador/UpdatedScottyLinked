@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { getHandleFromEmail, isAndrewEmail, getAppUserByHandle } from "@/lib/auth/db";
 import { getCommentsForPost, addComment } from "@/lib/db/posts";
+import { insertNotification } from "@/lib/db/notifications";
+import { getUserById } from "@/lib/db/users";
 import { NextResponse } from "next/server";
 
 async function getCurrentAppUserId(): Promise<number | null> {
@@ -60,5 +62,24 @@ export async function POST(
   if (!comment) {
     return NextResponse.json({ error: "Failed to add comment" }, { status: 500 });
   }
+
+  const { data: postRow } = await supabase
+    .from("posts")
+    .select("authorid")
+    .eq("id", id)
+    .maybeSingle();
+  const authorId =
+    (postRow?.authorid as number) ?? (postRow as { authorID?: number })?.authorID;
+  if (authorId && authorId !== currentUserId) {
+    const commenter = await getUserById(currentUserId);
+    await insertNotification({
+      userId: authorId,
+      type: "post_comment",
+      title: "New comment on your post",
+      body: `${commenter?.fullName ?? "Someone"} commented on your post.`,
+      meta: { postId: id },
+    });
+  }
+
   return NextResponse.json(comment);
 }

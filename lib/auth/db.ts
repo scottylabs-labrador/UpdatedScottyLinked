@@ -18,6 +18,7 @@ export function isAndrewEmail(email: string): boolean {
  */
 function rowToUser(row: Record<string, unknown> | null): User | null {
   if (!row || typeof row.id !== "number") return null;
+  const skillsRaw = row.skills as string[] | undefined | null;
   return {
     id: row.id as number,
     handle: (row.handle as string) ?? "",
@@ -29,6 +30,8 @@ function rowToUser(row: Record<string, unknown> | null): User | null {
     bio: (row.bio as string | null) ?? null,
     created_at: (row.created_at as string) ?? "",
     updated_at: (row.updated_at as string | null) ?? null,
+    isModerator: !!(row.is_moderator as boolean | undefined),
+    skills: Array.isArray(skillsRaw) ? skillsRaw : [],
   };
 }
 
@@ -101,6 +104,7 @@ export async function updateAppUser(
     bio?: string | null;
     photoURL?: string | null;
     bannerURL?: string | null;
+    skills?: string[];
   }
 ): Promise<User | null> {
   if (!supabaseAdmin) return null;
@@ -114,6 +118,7 @@ export async function updateAppUser(
   if (updates.bio !== undefined) row.bio = updates.bio;
   if (updates.photoURL !== undefined) row.photourl = updates.photoURL;
   if (updates.bannerURL !== undefined) row.bannerurl = updates.bannerURL;
+  if (updates.skills !== undefined) row.skills = updates.skills;
 
   const { data, error } = await supabaseAdmin
     .from("users")

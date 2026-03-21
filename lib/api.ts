@@ -1,43 +1,45 @@
-import { FeedPost, Opportunity, Profile, UserProfile, NewPost } from "./types";
-import { getFeedPosts, createPost as createPostDb } from "./db/posts";
+import { FeedPost, Opportunity, Profile, UserProfile } from "./types";
+import { getFeedPosts } from "./db/posts";
 import { getOpportunities } from "./db/opportunities";
 import { getProfiles, getUserProfile } from "./db/users";
 import { createConnection as createConnectionDb } from "./db/connections";
 
 // ==================== POSTS ====================
 export const fetchPosts = async (
-  userId: number | null = null
+  userId: number | null = null,
+  connectedUserIds: number[] = [],
+  hiddenAuthorIds: number[] = []
 ): Promise<FeedPost[]> => {
   try {
-    return await getFeedPosts(userId);
+    return await getFeedPosts(userId, connectedUserIds, 50, hiddenAuthorIds);
   } catch (error) {
     console.error("Error fetching posts:", error);
     return [];
   }
 };
 
+/** Creates a post as the signed-in user (server verifies session). */
 export const createPost = async (
   title: string,
   content: string,
   tags: string[] = [],
-  audience: string = "public",
-  userId: number = 1
+  audience: string = "public"
 ): Promise<boolean> => {
   try {
-    // Use provided title or generate from content
     const postTitle =
       title.trim() || content.substring(0, 50).trim() || "New Post";
-
-    const newPost: NewPost = {
-      title: postTitle,
-      content: content,
-      authorId: userId,
-      audience: audience,
-      tags: tags,
-    };
-
-    const post = await createPostDb(newPost);
-    return post !== null;
+    const res = await fetch("/api/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        title: postTitle,
+        content,
+        tags,
+        audience,
+      }),
+    });
+    return res.ok;
   } catch (error) {
     console.error("Error creating post:", error);
     return false;
@@ -83,22 +85,29 @@ export const fetchCurrentUser = async (
   }
 };
 
+/**
+ * Updates the signed-in user's profile via PATCH /api/me.
+ * Maps UserProfile-shaped fields to the API (fullName, major, year, bio).
+ */
 export const updateUserProfile = async (
-  userId: string,
+  _userId: string,
   updates: Partial<UserProfile>
 ): Promise<boolean> => {
   try {
-    // TODO: Uncomment when database is ready
-    // const { error } = await supabase
-    //   .from('profiles')
-    //   .update(updates)
-    //   .eq('id', userId);
-    //
-    // if (error) throw error;
-    // return true;
+    const body: Record<string, unknown> = {};
+    if (updates.name !== undefined) body.fullName = updates.name;
+    if (updates.major !== undefined) body.major = updates.major;
+    if (updates.year !== undefined) body.year = updates.year;
+    if (updates.bio !== undefined) body.bio = updates.bio;
+    if (Object.keys(body).length === 0) return true;
 
-    console.log("Updating profile:", userId, updates);
-    return true;
+    const res = await fetch("/api/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(body),
+    });
+    return res.ok;
   } catch (error) {
     console.error("Error updating profile:", error);
     return false;

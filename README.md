@@ -15,10 +15,21 @@ The app supports **Login with Google** restricted to **@andrew.cmu.edu** emails.
      - `NEXT_PUBLIC_SUPABASE_URL`
      - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
      - `SUPABASE_SERVICE_ROLE_KEY` (for creating users in the callback)
-     - `NEXT_PUBLIC_APP_URL` — base URL of the app (e.g. `http://localhost:3000`). **Must exactly match** one of the Redirect URLs in Supabase (e.g. `http://localhost:3000` with no trailing slash). If missing, login redirect may go to the wrong URL and "nothing happens" after Google sign-in.
+     - `NEXT_PUBLIC_APP_URL` — base URL of the app (e.g. `http://localhost:3000` or `https://yourdomain.com`). **Must appear** in Supabase Redirect URLs (no trailing slash). On Vercel, if this is unset at build time, the app falls back to `https://$VERCEL_URL` so preview and production URLs work; set `NEXT_PUBLIC_APP_URL` explicitly for a custom domain.
 
 3. **Database**
    - The `users` table must have at least: `id`, `handle`, `fullName`, `photoURL`, `bannerURL`, `major`, `year`, `bio`, `created_at`, `updated_at`. `handle` should be unique (e.g. andrew id). New users are inserted with `handle` derived from the email (e.g. `user@andrew.cmu.edu` → `user`).
+   - **In-app notifications** (connection requests, accepts, comments): run the SQL in [`supabase/migrations/001_notifications.sql`](supabase/migrations/001_notifications.sql) in the Supabase SQL editor. Without this table, those features no-op gracefully.
+   - **Project interest** (in-app “express interest” on listings): run [`supabase/migrations/002_project_interests.sql`](supabase/migrations/002_project_interests.sql). Without it, interest APIs return errors until the table exists.
+   - **Trust & moderation** (reports, blocks, moderator flag): run [`supabase/migrations/003_trust_moderation.sql`](supabase/migrations/003_trust_moderation.sql). Adds `users.is_moderator`, `reports`, and `blocks`. Assign moderators in SQL, e.g. `update users set is_moderator = true where handle = 'yourhandle';`, or set comma-separated **Andrew** handles in `MODERATOR_HANDLES` for bootstrap until DB flags are set.
+   - **Discovery (skills)**: run [`supabase/migrations/004_discovery_skills.sql`](supabase/migrations/004_discovery_skills.sql) for `users.skills` (`text[]`).
+   - **Direct messaging**: run [`supabase/migrations/005_messaging.sql`](supabase/migrations/005_messaging.sql) for `conversations` and `direct_messages`.
+
+### Deploying to Vercel
+
+1. Add the same environment variables as in `.env.local` (including `SUPABASE_SERVICE_ROLE_KEY`).
+2. Set `NEXT_PUBLIC_APP_URL` to your production URL (e.g. `https://scottylinked.vercel.app` or your custom domain) **or** rely on the automatic `VERCEL_URL` fallback and add each URL you use to Supabase **Authentication → URL Configuration → Redirect URLs** (e.g. `https://<project>.vercel.app/auth/callback`).
+3. Redeploy after changing environment variables so `NEXT_PUBLIC_*` values are baked into the build.
 
 ### Debugging auth
 

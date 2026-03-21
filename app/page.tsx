@@ -22,6 +22,7 @@ interface AppUser {
   handle: string;
   fullName: string;
   photoURL: string | null;
+  isModerator?: boolean;
 }
 
 interface LandingPageProps {
@@ -51,21 +52,39 @@ const LandingPage: React.FC<LandingPageProps> = ({ username = "Username" }) => {
   const loadMe = async () => {
     const res = await fetch("/api/me", { credentials: "include" });
     const data = await res.json();
-    if (data.appUser) setAppUser(data.appUser);
-    else setAppUser(null);
+    if (data.appUser) {
+      setAppUser({
+        id: data.appUser.id,
+        handle: data.appUser.handle,
+        fullName: data.appUser.fullName,
+        photoURL: data.appUser.photoURL,
+        isModerator: data.appUser.isModerator,
+      });
+    } else setAppUser(null);
   };
 
   const loadData = async () => {
     setLoading(true);
     const uid = currentUserId ?? null;
     try {
-      const [postsData, opportunitiesData, profilesData, userData, connected] =
+      const connected =
+        uid != null ? await getConnectedUserIds(uid, true) : [];
+      let hiddenUserIds: number[] = [];
+      if (uid != null) {
+        const hRes = await fetch("/api/blocks/hidden-ids", {
+          credentials: "include",
+        });
+        if (hRes.ok) {
+          const h = await hRes.json();
+          hiddenUserIds = h.hiddenUserIds ?? [];
+        }
+      }
+      const [postsData, opportunitiesData, profilesData, userData] =
         await Promise.all([
-          fetchPosts(uid),
+          fetchPosts(uid, connected, hiddenUserIds),
           fetchOpportunities(),
           fetchProfiles(uid ?? 0),
           fetchCurrentUser(uid ?? undefined),
-          getConnectedUserIds(uid, true),
         ]);
       setPosts(postsData);
       setOpportunities(opportunitiesData);
@@ -109,7 +128,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ username = "Username" }) => {
       setAuthError(
         message
           ? `Sign-in failed: ${message}`
-          : "Sign-in failed (code exchange). Check that NEXT_PUBLIC_APP_URL matches your Supabase redirect URL."
+          : "Sign-in failed (code exchange). Set NEXT_PUBLIC_APP_URL on Vercel (or rely on VERCEL_URL) and add the matching /auth/callback URL in Supabase."
       );
     }
   }, []);
@@ -141,7 +160,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ username = "Username" }) => {
           />
         )}
         {activeTab === "opportunities" && (
-          <Opportunities opportunities={opportunities} loading={loading} />
+          <Opportunities
+            opportunities={opportunities}
+            loading={loading}
+            currentUserId={currentUserId}
+            onProjectCreated={loadData}
+          />
         )}
         {activeTab === "network" && (
           <Network

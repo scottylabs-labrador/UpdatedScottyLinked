@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { User, Profile, UserProfile } from "@/lib/types";
 
 // Re-export User for backwards compatibility
@@ -7,6 +8,7 @@ export type { User };
 /** Map DB row (snake_case: fullname, photourl, bannerurl) to User (camelCase). */
 function rowToUser(row: Record<string, unknown> | null): User | null {
   if (!row || typeof row.id !== "number") return null;
+  const skillsRaw = row.skills as string[] | undefined | null;
   return {
     id: row.id as number,
     handle: (row.handle as string) ?? "",
@@ -18,6 +20,8 @@ function rowToUser(row: Record<string, unknown> | null): User | null {
     bio: (row.bio as string | null) ?? null,
     created_at: (row.created_at as string) ?? "",
     updated_at: (row.updated_at as string | null) ?? null,
+    isModerator: !!(row.is_moderator as boolean | undefined),
+    skills: Array.isArray(skillsRaw) ? skillsRaw : [],
   };
 }
 
@@ -47,6 +51,73 @@ export async function searchUsers(filter: string): Promise<User[]> {
   return (data ?? [])
     .map((row) => rowToUser(row as Record<string, unknown>))
     .filter((u): u is User => u != null);
+}
+
+export type NetworkSearchFilters = {
+  q?: string;
+  major?: string;
+  year?: string;
+  /** Match if any user skill contains this substring (case-insensitive). */
+  skill?: string;
+};
+
+/**
+ * Server-side search for Network tab (service role). Optional text + major/year filters.
+ */
+export async function searchUsersForNetwork(
+  filters: NetworkSearchFilters,
+  excludeUserId?: number,
+  limit: number = 40
+): Promise<User[]> {
+  if (!supabaseAdmin) return [];
+
+  let query = supabaseAdmin.from("users").select("*");
+
+  const q = filters.q?.trim();
+  if (q) {
+    query = query.or(
+      `handle.ilike.%${q}%,fullname.ilike.%${q}%,major.ilike.%${q}%,year.ilike.%${q}%`
+    );
+  }
+
+  const major = filters.major?.trim();
+  if (major) {
+    query = query.ilike("major", `%${major}%`);
+  }
+
+  const year = filters.year?.trim();
+  if (year) {
+    query = query.ilike("year", `%${year}%`);
+  }
+
+  if (excludeUserId != null) {
+    query = query.neq("id", excludeUserId);
+  }
+
+  const fetchLimit = filters.skill?.trim() ? Math.min(limit * 4, 200) : limit;
+
+  const { data, error } = await query
+    .order("handle", { ascending: true })
+    .limit(fetchLimit);
+
+  if (error) {
+    console.error("Error searching users (admin):", error);
+    return [];
+  }
+
+  let users = (data ?? [])
+    .map((row) => rowToUser(row as Record<string, unknown>))
+    .filter((u): u is User => u != null);
+
+  const skill = filters.skill?.trim();
+  if (skill) {
+    const s = skill.toLowerCase();
+    users = users.filter((u) =>
+      (u.skills ?? []).some((k) => k.toLowerCase().includes(s))
+    );
+  }
+
+  return users.slice(0, limit);
 }
 
 /**
@@ -119,6 +190,7 @@ function userToRow(u: Partial<User>): Record<string, unknown> {
   if (u.major !== undefined) row.major = u.major;
   if (u.year !== undefined) row.year = u.year;
   if (u.bio !== undefined) row.bio = u.bio;
+  if (u.skills !== undefined) row.skills = u.skills;
   return row;
 }
 
@@ -223,7 +295,7 @@ export async function getProfiles(
         photoURL: user.photoURL ?? null,
         major: user.major || "Undeclared",
         year: user.year || "Unknown",
-        skills: [],
+        skills: user.skills ?? [],
         bio: user.bio || "",
         connections: connectionCount,
       };
@@ -234,6 +306,30 @@ export async function getProfiles(
     console.error("Error in getProfiles:", error);
     return [];
   }
+}
+
+function avatarInitials(name: string | null): string {
+  if (!name) return "?";
+  const parts = name.split(" ");
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
+
+/** Map a User row to Network `Profile` card shape. */
+export function userToNetworkProfile(user: User): Profile {
+  return {
+    id: user.id,
+    name: user.fullName,
+    avatar: avatarInitials(user.fullName),
+    photoURL: user.photoURL ?? null,
+    major: user.major || "Undeclared",
+    year: user.year || "Unknown",
+    skills: user.skills ?? [],
+    bio: user.bio || "",
+    connections: 0,
+  };
 }
 
 /**
@@ -271,7 +367,7 @@ export async function getUserProfile(
       major: user.major || "Undeclared",
       year: user.year || "Unknown",
       email: email,
-      skills: [],
+      skills: user.skills ?? [],
       bio: user.bio || "",
       connections: connectionCount,
       gpa: "N/A",

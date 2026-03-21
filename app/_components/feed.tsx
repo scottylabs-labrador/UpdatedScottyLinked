@@ -88,8 +88,7 @@ export default function Feed({
         postTitle || postContent.substring(0, 50).trim(),
         postContent,
         tags,
-        postVisibility,
-        currentUserId ?? 1
+        postVisibility
       );
 
       if (success) {

@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Avatar from "@/app/_components/Avatar";
 import AppNavbar from "@/app/_components/AppNavbar";
+import ReportModal from "@/app/_components/ReportModal";
 import { UserProfile } from "@/lib/types";
 
 type ConnectionStatus =
@@ -15,6 +16,7 @@ type ConnectionStatus =
 
 export default function PublicProfilePage() {
   const params = useParams();
+  const router = useRouter();
   const userId = params.userId as string;
   const profileId = parseInt(userId, 10);
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -23,6 +25,8 @@ export default function PublicProfilePage() {
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [connectionState, setConnectionState] = useState<ConnectionStatus | null>(null);
   const [connectionBusy, setConnectionBusy] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -107,6 +111,42 @@ export default function PublicProfilePage() {
     }
   };
 
+  const startMessage = async () => {
+    if (currentUserId == null || currentUserId === profileId || actionBusy) return;
+    setActionBusy(true);
+    try {
+      const res = await fetch("/api/messages/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ otherUserId: profileId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.conversationId) {
+        router.push(`/messages/${data.conversationId}`);
+      }
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const blockUser = async () => {
+    if (currentUserId == null || currentUserId === profileId || actionBusy) return;
+    if (!confirm("Block this user? You will not see each other's content.")) return;
+    setActionBusy(true);
+    try {
+      const res = await fetch("/api/blocks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ blockedUserId: profileId }),
+      });
+      if (res.ok) router.push("/");
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
   const rejectRequest = async () => {
     if (connectionState?.status !== "pending_received" || connectionState.connectionId == null || connectionBusy) return;
     setConnectionBusy(true);
@@ -142,6 +182,12 @@ export default function PublicProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ReportModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        targetType="user"
+        targetId={profileId}
+      />
       <AppNavbar />
       <div className="max-w-3xl mx-auto py-8 px-4">
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -208,6 +254,33 @@ export default function PublicProfilePage() {
                     {connectionState.status === "connected" && (
                       <span className="text-sm text-gray-500 font-medium">Connected</span>
                     )}
+                  </div>
+                )}
+                {currentUserId != null && currentUserId !== profileId && (
+                  <div className="w-full flex flex-wrap gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={startMessage}
+                      disabled={actionBusy}
+                      className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      Message
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReportOpen(true)}
+                      className="px-3 py-1.5 text-sm text-red-700 border border-red-200 rounded-lg hover:bg-red-50"
+                    >
+                      Report
+                    </button>
+                    <button
+                      type="button"
+                      onClick={blockUser}
+                      disabled={actionBusy}
+                      className="px-3 py-1.5 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100"
+                    >
+                      Block
+                    </button>
                   </div>
                 )}
               </div>

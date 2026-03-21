@@ -23,6 +23,7 @@ export default function ProfileView({
     major: "",
     year: "",
     bio: "",
+    skillsText: "",
   });
 
   if (loading) {
@@ -43,6 +44,7 @@ export default function ProfileView({
       major: user.major,
       year: user.year,
       bio: user.bio ?? "",
+      skillsText: (user.skills ?? []).join(", "),
     });
     setError(null);
     setEditing(true);
@@ -66,6 +68,10 @@ export default function ProfileView({
           major: form.major.trim() || null,
           year: form.year.trim() || null,
           bio: form.bio.trim() || null,
+          skills: form.skillsText
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
         }),
       });
       if (!res.ok) {
@@ -191,6 +197,20 @@ export default function ProfileView({
                   rows={4}
                   placeholder="A short bio..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Skills (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={form.skillsText}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, skillsText: e.target.value }))
+                  }
+                  placeholder="e.g. React, ML, design"
+                  className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
                 />
               </div>
             </div>

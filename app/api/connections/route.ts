@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { getHandleFromEmail, isAndrewEmail, getAppUserByHandle } from "@/lib/auth/db";
 import { createConnection as createConnectionDb } from "@/lib/db/connections";
+import { insertNotification } from "@/lib/db/notifications";
+import { getUserById } from "@/lib/db/users";
 import { NextResponse } from "next/server";
 
 async function getCurrentAppUserId(): Promise<number | null> {
@@ -31,6 +33,14 @@ export async function POST(request: Request) {
   }
   try {
     await createConnectionDb(currentId, targetUserId);
+    const fromUser = await getUserById(currentId);
+    await insertNotification({
+      userId: targetUserId,
+      type: "connection_request",
+      title: "New connection request",
+      body: `${fromUser?.fullName ?? "Someone"} wants to connect on ScottyLinked.`,
+      meta: { fromUserId: currentId },
+    });
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Failed" }, { status: 400 });

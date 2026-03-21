@@ -1,6 +1,8 @@
 import { supabase } from "@/lib/supabaseClient";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getConnectedUserIds } from "./connections";
-import { Project, NewPost, Opportunity } from "@/lib/types";
+import { Project, NewPost } from "@/lib/types";
+import { getUserById } from "./users";
 
 export async function getPostsIDs(userId: number, global: boolean) {
   let connectedIds = await getConnectedUserIds(userId, true);
@@ -35,7 +37,77 @@ export async function getProjects(amount: number): Promise<Project[]> {
     console.error("Error fetching project:", error);
     return [];
   }
-  return data; // this will be an object, not an array
+  return (data ?? []) as Project[];
+}
+
+function rowToProject(row: Record<string, unknown>): Project {
+  return {
+    id: row.id as number,
+    created_at: (row.created_at as string) ?? "",
+    title: (row.title as string) ?? "",
+    author: (row.author as string) ?? "",
+    authorID: (row.authorid as number) ?? (row.authorID as number),
+    skills: (row.skills as string[]) ?? [],
+    description: (row.description as string) ?? "",
+    level: (row.level as string) ?? "",
+    type: (row.type as string) ?? "",
+  };
+}
+
+/** Full project row for detail page (service role). */
+export async function getProjectByIdFull(projectId: number): Promise<Project | null> {
+  if (!supabaseAdmin) return null;
+  const { data, error } = await supabaseAdmin
+    .from("projects")
+    .select("*")
+    .eq("id", projectId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return rowToProject(data as Record<string, unknown>);
+}
+
+export type NewProjectInput = {
+  title: string;
+  description: string;
+  skills: string[];
+  level?: string;
+  type?: string;
+  authorId: number;
+};
+
+/** Insert a project listing (server; service role). */
+export async function createProjectAdmin(
+  input: NewProjectInput
+): Promise<Project | null> {
+  if (!supabaseAdmin) return null;
+
+  const author = await getUserById(input.authorId);
+  if (!author) return null;
+
+  const row = {
+    title: input.title.trim(),
+    description: input.description.trim(),
+    author: author.fullName,
+    authorid: input.authorId,
+    skills: input.skills,
+    level: input.level?.trim() || "Any",
+    type: input.type?.trim() || "Project",
+    created_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabaseAdmin
+    .from("projects")
+    .insert(row)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating project:", error);
+    return null;
+  }
+
+  return data as Project;
 }
 
 export async function createPost(post: NewPost) {

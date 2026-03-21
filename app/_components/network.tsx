@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Avatar from "./Avatar";
 import { Profile } from "@/lib/types";
@@ -27,6 +27,58 @@ export default function Network({
   const [pendingReceived, setPendingReceived] = useState<PendingReceivedItem[]>([]);
   const [pendingLoading, setPendingLoading] = useState(true);
   const [actioningId, setActioningId] = useState<number | null>(null);
+  const [searchQ, setSearchQ] = useState("");
+  const [filterMajor, setFilterMajor] = useState("");
+  const [filterYear, setFilterYear] = useState("");
+  const [filterSkill, setFilterSkill] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
+  const [searchProfiles, setSearchProfiles] = useState<Profile[] | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(searchQ), 300);
+    return () => clearTimeout(t);
+  }, [searchQ]);
+
+  const runSearch = useCallback(async () => {
+    const q = debouncedQ.trim();
+    const major = filterMajor.trim();
+    const year = filterYear.trim();
+    const skill = filterSkill.trim();
+    if (!q && !major && !year && !skill) {
+      setSearchProfiles(null);
+      return;
+    }
+    if (uid == null) {
+      setSearchProfiles([]);
+      return;
+    }
+    setSearchLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      if (major) params.set("major", major);
+      if (year) params.set("year", year);
+      if (skill) params.set("skill", skill);
+      const res = await fetch(`/api/users/search?${params}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSearchProfiles(data.profiles ?? []);
+      } else {
+        setSearchProfiles([]);
+      }
+    } catch {
+      setSearchProfiles([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [debouncedQ, filterMajor, filterYear, filterSkill, uid]);
+
+  useEffect(() => {
+    runSearch();
+  }, [runSearch]);
 
   const refreshPending = async () => {
     if (uid == null) {
@@ -146,16 +198,122 @@ export default function Network({
     return <div className="text-center py-8">Loading profiles...</div>;
   }
 
+  const searchActive =
+    debouncedQ.trim() ||
+    filterMajor.trim() ||
+    filterYear.trim() ||
+    filterSkill.trim();
+
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Search Bar */}
-      <div className="mb-6">
+      <div className="mb-6 space-y-3">
         <input
           type="text"
-          placeholder="Search students by name, major, or skills..."
+          placeholder="Search by name or Andrew ID..."
+          value={searchQ}
+          onChange={(e) => setSearchQ(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
         />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            placeholder="Filter by major (optional)"
+            value={filterMajor}
+            onChange={(e) => setFilterMajor(e.target.value)}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+          />
+          <input
+            type="text"
+            placeholder="Class year e.g. 2026 (optional)"
+            value={filterYear}
+            onChange={(e) => setFilterYear(e.target.value)}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+          />
+          <input
+            type="text"
+            placeholder="Skill contains (optional)"
+            value={filterSkill}
+            onChange={(e) => setFilterSkill(e.target.value)}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+          />
+        </div>
+        {searchLoading && searchActive && (
+          <p className="text-sm text-gray-500">Searching...</p>
+        )}
       </div>
+
+      {searchActive && searchProfiles && (
+        <div className="mb-10">
+          <h2 className="text-lg font-semibold mb-2 text-black">
+            Search results
+          </h2>
+          {searchProfiles.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+              No students match your search.
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4">
+              {searchProfiles.map((profile) => (
+                <div
+                  key={profile.id}
+                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition"
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <Link href={`/profile/${profile.id}`} className="flex-shrink-0">
+                      <Avatar
+                        text={profile.avatar}
+                        size="md"
+                        imageUrl={profile.photoURL}
+                      />
+                    </Link>
+                    <div className="flex-1">
+                      <Link
+                        href={`/profile/${profile.id}`}
+                        className="text-lg font-bold text-gray-900 hover:text-blue-600 hover:underline"
+                      >
+                        {profile.name}
+                      </Link>
+                      <p className="text-gray-600">{profile.major}</p>
+                      <p className="text-sm text-gray-500">{profile.year}</p>
+                    </div>
+                  </div>
+                  <p className="text-gray-700 text-sm mb-4 line-clamp-3">
+                    {profile.bio}
+                  </p>
+                  {profile.skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {profile.skills.slice(0, 8).map((s, i) => (
+                        <span
+                          key={`${profile.id}-${i}-${s}`}
+                          className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs"
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {uid != null &&
+                    profile.id !== uid &&
+                    !connectedIds.includes(profile.id) &&
+                    !pendingSentIds.includes(profile.id) &&
+                    !pendingReceivedIds.includes(profile.id) && (
+                      <button
+                        type="button"
+                        onClick={() => handleConnect(profile.id)}
+                        disabled={connectingUsers.has(profile.id)}
+                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold disabled:opacity-50"
+                      >
+                        {connectingUsers.has(profile.id)
+                          ? "Connecting..."
+                          : "Connect"}
+                      </button>
+                    )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Connection requests */}
       {(pendingSent.length > 0 || pendingReceived.length > 0) && (

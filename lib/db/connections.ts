@@ -1,5 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type PendingSentItem = {
   id: number;
@@ -32,6 +33,25 @@ export async function getConnectedUserIds(
   if (!data) return [];
 
   const connectedIds = data.map((conn: any) =>
+    conn.requester_id === userId ? conn.reciever_id : conn.requester_id
+  );
+  return [...new Set(connectedIds)];
+}
+
+/** Server-side: accepted connection peer ids (service role). */
+export async function getConnectedUserIdsAdmin(
+  userId: number | null
+): Promise<number[]> {
+  if (userId == null || !supabaseAdmin) return [];
+  const { data, error } = await supabaseAdmin
+    .from("connections")
+    .select("requester_id, reciever_id")
+    .or(`requester_id.eq.${userId},reciever_id.eq.${userId}`)
+    .eq("status", "accepted");
+
+  if (error || !data) return [];
+
+  const connectedIds = data.map((conn: { requester_id: number; reciever_id: number }) =>
     conn.requester_id === userId ? conn.reciever_id : conn.requester_id
   );
   return [...new Set(connectedIds)];

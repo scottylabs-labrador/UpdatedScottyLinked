@@ -5,6 +5,7 @@ import {
   getAppUserByHandle,
   updateAppUser,
 } from "@/lib/auth/db";
+import { isModeratorUser } from "@/lib/moderation";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -34,6 +35,8 @@ export async function GET() {
     );
   }
 
+  const mod = await isModeratorUser(appUser.id);
+
   return NextResponse.json({
     user: { email: user.email },
     appUser: {
@@ -41,6 +44,8 @@ export async function GET() {
       handle: appUser.handle,
       fullName: appUser.fullName,
       photoURL: appUser.photoURL,
+      isModerator: mod,
+      skills: appUser.skills ?? [],
     },
   });
 }
@@ -78,17 +83,28 @@ export async function PATCH(request: Request) {
     year?: string | null;
     bio?: string | null;
     photoURL?: string | null;
+    skills?: string[];
   } = {};
   if (typeof body.fullName === "string") updates.fullName = body.fullName;
   if (body.major !== undefined) updates.major = body.major === null ? null : String(body.major);
   if (body.year !== undefined) updates.year = body.year === null ? null : String(body.year);
   if (body.bio !== undefined) updates.bio = body.bio === null ? null : String(body.bio);
   if (body.photoURL !== undefined) updates.photoURL = body.photoURL === null ? null : String(body.photoURL);
+  if (Array.isArray(body.skills)) {
+    updates.skills = body.skills
+      .filter((s: unknown): s is string => typeof s === "string")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 24)
+      .map((s) => s.slice(0, 48));
+  }
 
   const updated = await updateAppUser(appUser.id, updates);
   if (!updated) {
     return NextResponse.json({ error: "Update failed" }, { status: 500 });
   }
+
+  const mod = await isModeratorUser(updated.id);
 
   return NextResponse.json({
     appUser: {
@@ -96,6 +112,8 @@ export async function PATCH(request: Request) {
       handle: updated.handle,
       fullName: updated.fullName,
       photoURL: updated.photoURL,
+      isModerator: mod,
+      skills: updated.skills ?? [],
     },
   });
 }

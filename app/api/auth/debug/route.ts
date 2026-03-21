@@ -4,6 +4,7 @@ import {
   isAndrewEmail,
   getAppUserByHandle,
 } from "@/lib/auth/db";
+import { getAppBaseUrl } from "@/lib/app-url";
 import { NextResponse } from "next/server";
 
 /**
@@ -17,8 +18,8 @@ export async function GET() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
-  const redirectUrl = `${appUrl.replace(/\/$/, "")}/auth/callback`;
+  const appUrl = getAppBaseUrl();
+  const redirectUrl = `${appUrl}/auth/callback`;
 
   const out: Record<string, unknown> = {
     timestamp: new Date().toISOString(),
@@ -26,7 +27,9 @@ export async function GET() {
       hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      appUrl,
+      nextPublicAppUrl: process.env.NEXT_PUBLIC_APP_URL?.trim() ?? null,
+      vercelUrl: process.env.VERCEL_URL?.trim() ?? null,
+      resolvedAppUrl: appUrl,
       redirectUrlUsedForOAuth: redirectUrl,
     },
     session: user
