@@ -57,17 +57,17 @@ export default function ReportModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-[1px]"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+        className="bg-[var(--surface)] rounded-[var(--radius-card)] border border-[var(--border)] shadow-xl max-w-md w-full p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">Report</h2>
-        <p className="text-sm text-gray-600 mb-4">
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Report content</h2>
+        <p className="text-sm text-[var(--muted)] mb-4">
           Reporting {targetType} #{targetId}. Moderators will review this report.
         </p>
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -77,7 +77,7 @@ export default function ReportModal({
           type="text"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 mb-3"
+          className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-gray-900 mb-3 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30"
           placeholder="Brief summary"
           disabled={submitting}
         />
@@ -88,7 +88,7 @@ export default function ReportModal({
           value={details}
           onChange={(e) => setDetails(e.target.value)}
           rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 resize-none mb-3"
+          className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-gray-900 resize-none mb-3 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30"
           disabled={submitting}
         />
         {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
@@ -96,7 +96,7 @@ export default function ReportModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700"
+            className="px-4 py-2 min-h-[40px] border border-[var(--border)] rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium"
             disabled={submitting}
           >
             Cancel
@@ -105,9 +105,9 @@ export default function ReportModal({
             type="button"
             onClick={submit}
             disabled={submitting}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+            className="px-4 py-2 min-h-[40px] bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm font-semibold"
           >
-            {submitting ? "Submitting..." : "Submit report"}
+            {submitting ? "Submitting…" : "Submit report"}
           </button>
         </div>
       </div>

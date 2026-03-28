@@ -41,6 +41,13 @@ export async function getProjects(amount: number): Promise<Project[]> {
 }
 
 function rowToProject(row: Record<string, unknown>): Project {
+  const rawGid = row.group_id ?? row.groupId;
+  const groupId =
+    rawGid == null || rawGid === ""
+      ? null
+      : typeof rawGid === "number"
+        ? rawGid
+        : Number(rawGid);
   return {
     id: row.id as number,
     created_at: (row.created_at as string) ?? "",
@@ -51,6 +58,7 @@ function rowToProject(row: Record<string, unknown>): Project {
     description: (row.description as string) ?? "",
     level: (row.level as string) ?? "",
     type: (row.type as string) ?? "",
+    groupId: Number.isFinite(groupId as number) ? (groupId as number) : null,
   };
 }
 
@@ -74,6 +82,8 @@ export type NewProjectInput = {
   level?: string;
   type?: string;
   authorId: number;
+  /** Required for new listings; global listings are no longer created from the app. */
+  groupId: number;
 };
 
 /** Insert a project listing (server; service role). */
@@ -94,6 +104,7 @@ export async function createProjectAdmin(
     level: input.level?.trim() || "Any",
     type: input.type?.trim() || "Project",
     created_at: new Date().toISOString(),
+    group_id: input.groupId,
   };
 
   const { data, error } = await supabaseAdmin

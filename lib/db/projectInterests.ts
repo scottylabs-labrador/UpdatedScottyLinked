@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { getUserById } from "@/lib/db/users";
+import { getUsersByIds } from "@/lib/db/users";
 
 export type ProjectInterestRow = {
   id: number;
@@ -181,12 +181,8 @@ export async function listIncomingInterestsForOwner(
       (interests as { applicant_id: number }[]).map((r) => r.applicant_id)
     ),
   ];
-  const applicants = await Promise.all(
-    applicantIds.map((id) => getUserById(id))
-  );
-  const userById = new Map(
-    applicants.filter(Boolean).map((u) => [u!.id, u!])
-  );
+  const applicants = await getUsersByIds(applicantIds);
+  const userById = new Map(applicants.map((u) => [u.id, u]));
 
   return (interests as ProjectInterestRow[]).map((row) => {
     const u = userById.get(row.applicant_id);
@@ -226,12 +222,8 @@ export async function getPendingInterestsForProject(
       (interests as { applicant_id: number }[]).map((r) => r.applicant_id)
     ),
   ];
-  const applicants = await Promise.all(
-    applicantIds.map((id) => getUserById(id))
-  );
-  const userById = new Map(
-    applicants.filter(Boolean).map((u) => [u!.id, u!])
-  );
+  const applicants = await getUsersByIds(applicantIds);
+  const userById = new Map(applicants.map((u) => [u.id, u]));
 
   return (interests as ProjectInterestRow[]).map((row) => {
     const u = userById.get(row.applicant_id);

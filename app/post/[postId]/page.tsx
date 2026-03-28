@@ -4,8 +4,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Avatar from "@/app/_components/Avatar";
-import AppNavbar from "@/app/_components/AppNavbar";
 import ReportModal from "@/app/_components/ReportModal";
+import { AppPageContainer } from "@/app/_components/AppShell";
+import { Heart, MessageCircle } from "lucide-react";
 import type { FeedPost } from "@/lib/types";
 import type { PostCommentWithAuthor } from "@/lib/db/posts";
 
@@ -118,43 +119,43 @@ export default function PostPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <AppNavbar />
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <p className="text-gray-500">Loading post...</p>
+      <AppPageContainer maxWidthClass="max-w-5xl">
+        <div className="flex items-center justify-center min-h-[50vh] text-[var(--muted)] text-sm">
+          Loading post…
         </div>
-      </div>
+      </AppPageContainer>
     );
   }
 
   if (error || !post) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <AppNavbar />
-        <div className="max-w-2xl mx-auto py-12 px-4 text-center">
-          <p className="text-gray-600">{error ?? "Post not found"}</p>
-          <Link href="/" className="mt-4 inline-block text-blue-600 hover:underline">
+      <AppPageContainer maxWidthClass="max-w-lg">
+        <div className="card-surface p-8 text-center shadow-sm">
+          <p className="text-gray-700">{error ?? "Post not found"}</p>
+          <Link
+            href="/"
+            className="mt-4 inline-block text-[var(--brand)] font-medium hover:underline"
+          >
             Back to feed
           </Link>
         </div>
-      </div>
+      </AppPageContainer>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       <ReportModal
         open={reportOpen}
         onClose={() => setReportOpen(false)}
         targetType="post"
         targetId={id}
       />
-      <AppNavbar />
-      <div className="max-w-5xl mx-auto py-6 px-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col md:flex-row min-h-[480px]">
+      <AppPageContainer maxWidthClass="max-w-5xl">
+        <div className="card-surface overflow-hidden flex flex-col md:flex-row min-h-[min(480px,70vh)] shadow-sm">
           {/* Left: Post */}
-          <div className="md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-gray-200">
-            <div className="p-4 flex items-center gap-3 border-b border-gray-100">
+          <div className="md:w-1/2 flex flex-col border-b md:border-b-0 md:border-r border-[var(--border)]">
+            <div className="p-4 flex items-center gap-3 border-b border-[var(--border)]">
               {post.authorId != null ? (
                 <Link href={`/profile/${post.authorId}`} className="shrink-0">
                   <Avatar text={post.avatar} size="sm" imageUrl={post.authorPhotoURL} />
@@ -166,7 +167,7 @@ export default function PostPage() {
                 {post.authorId != null ? (
                   <Link
                     href={`/profile/${post.authorId}`}
-                    className="font-semibold text-gray-900 hover:text-blue-600 hover:underline"
+                    className="font-semibold text-gray-900 hover:text-[var(--brand)] hover:underline"
                   >
                     {post.author}
                   </Link>
@@ -186,7 +187,7 @@ export default function PostPage() {
                   {post.tags.map((tag, i) => (
                     <span
                       key={i}
-                      className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium"
+                      className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md text-xs font-medium"
                     >
                       #{tag}
                     </span>
@@ -194,18 +195,23 @@ export default function PostPage() {
                 </div>
               )}
             </div>
-            <div className="p-4 pt-0 flex flex-wrap gap-4 text-sm border-t border-gray-100 items-center">
+            <div className="p-4 pt-0 flex flex-wrap gap-3 text-sm border-t border-[var(--border)] items-center">
               <button
                 type="button"
                 onClick={handleLike}
                 disabled={currentUserId == null || liking}
-                className="flex items-center gap-1.5 text-gray-700 hover:text-red-500 disabled:opacity-50 transition"
+                className={`inline-flex items-center gap-2 min-h-[40px] px-2 rounded-lg transition disabled:opacity-50 ${
+                  post.liked ? "text-red-600" : "text-gray-700 hover:bg-gray-50"
+                }`}
+                aria-label="Like"
               >
-                <span className="text-lg">{post.liked ? "❤️" : "🤍"}</span>
-                <span>{post.likes} {post.likes === 1 ? "like" : "likes"}</span>
+                <Heart className={`w-4 h-4 ${post.liked ? "fill-current" : ""}`} />
+                <span>
+                  {post.likes} {post.likes === 1 ? "like" : "likes"}
+                </span>
               </button>
-              <span className="text-gray-500 flex items-center gap-1.5">
-                <span className="text-lg">💬</span>
+              <span className="text-[var(--muted)] inline-flex items-center gap-2">
+                <MessageCircle className="w-4 h-4" />
                 {post.comments} {post.comments === 1 ? "comment" : "comments"}
               </span>
               {currentUserId != null &&
@@ -214,7 +220,7 @@ export default function PostPage() {
                   <button
                     type="button"
                     onClick={() => setReportOpen(true)}
-                    className="text-red-700 hover:underline ml-auto sm:ml-0"
+                    className="text-red-700 hover:underline ml-auto sm:ml-0 text-sm font-medium"
                   >
                     Report post
                   </button>
@@ -223,8 +229,8 @@ export default function PostPage() {
           </div>
 
           {/* Right: Comments */}
-          <div className="md:w-1/2 flex flex-col">
-            <div className="p-3 border-b border-gray-200">
+          <div className="md:w-1/2 flex flex-col bg-gray-50/50 md:bg-transparent">
+            <div className="p-3 border-b border-[var(--border)]">
               <h3 className="font-semibold text-gray-900">Comments</h3>
             </div>
             <div className="flex-1 overflow-y-auto min-h-[200px] max-h-[400px] p-3 space-y-4">
@@ -247,7 +253,7 @@ export default function PostPage() {
                       <div className="flex items-baseline gap-2 flex-wrap">
                         <Link
                           href={`/profile/${c.authorId}`}
-                          className="font-semibold text-gray-900 hover:text-blue-600 hover:underline text-sm"
+                          className="font-semibold text-gray-900 hover:text-[var(--brand)] hover:underline text-sm"
                         >
                           {c.authorName}
                         </Link>
@@ -262,7 +268,7 @@ export default function PostPage() {
               )}
             </div>
             {currentUserId != null && (
-              <form onSubmit={handleAddComment} className="p-3 border-t border-gray-200">
+              <form onSubmit={handleAddComment} className="p-3 border-t border-[var(--border)] bg-[var(--surface)]">
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -270,21 +276,21 @@ export default function PostPage() {
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     disabled={submittingComment}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="flex-1 px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 text-gray-900"
                   />
                   <button
                     type="submit"
                     disabled={!commentText.trim() || submittingComment}
-                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 min-h-[40px] bg-[var(--brand)] text-white text-sm font-semibold rounded-lg hover:bg-[var(--brand-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {submittingComment ? "Posting..." : "Post"}
+                    {submittingComment ? "Posting…" : "Post"}
                   </button>
                 </div>
               </form>
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </AppPageContainer>
+    </>
   );
 }

@@ -4,9 +4,17 @@ import React, { Suspense, useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import {
+  Bell,
+  MessageCircle,
+  Shield,
+  Home,
+  Briefcase,
+  Users,
+} from "lucide-react";
 import logo from "../147268137.png";
-import Avatar from "./Avatar";
-import { signInWithGoogle, signOut } from "@/app/auth/login/actions";
+import { signInWithGoogle } from "@/app/auth/login/actions";
+import { createClient } from "@/lib/supabase/client";
 
 interface AppUser {
   id: number;
@@ -16,13 +24,15 @@ interface AppUser {
   isModerator?: boolean;
 }
 
-function AppNavbarInner() {
+function AppNavbarInner({
+  initialAppUser,
+}: {
+  initialAppUser: AppUser | null;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [appUser, setAppUser] = useState<AppUser | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const [appUser, setAppUser] = useState<AppUser | null>(initialAppUser);
+  const [authLoading, setAuthLoading] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifData, setNotifData] = useState<{
@@ -46,26 +56,47 @@ function AppNavbarInner() {
   };
 
   const tab = pathname === "/" ? searchParams.get("tab") : null;
-  const activeTab = tab === "opportunities" || tab === "network" || tab === "profile" ? tab : "feed";
-  const onProfilePage = pathname.startsWith("/profile/");
+  const activeTab =
+    tab === "groups" || tab === "network" || tab === "profile"
+      ? tab
+      : tab === "opportunities"
+        ? "groups"
+        : "feed";
   const onMessages = pathname.startsWith("/messages");
   const onAdmin = pathname.startsWith("/admin");
 
+  const isHomeTabActive = (t: string) =>
+    pathname === "/" &&
+    !onMessages &&
+    !onAdmin &&
+    (t === "feed" ? activeTab === "feed" : activeTab === t);
+
   useEffect(() => {
-    fetch("/api/me", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.appUser) {
-          setAppUser({
-            id: data.appUser.id,
-            handle: data.appUser.handle,
-            fullName: data.appUser.fullName,
-            photoURL: data.appUser.photoURL,
-            isModerator: data.appUser.isModerator,
-          });
-        } else setAppUser(null);
-      })
-      .finally(() => setAuthLoading(false));
+    setAppUser(initialAppUser);
+  }, [initialAppUser]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      setAuthLoading(true);
+      fetch("/api/me", { credentials: "include" })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.appUser) {
+            setAppUser({
+              id: data.appUser.id,
+              handle: data.appUser.handle,
+              fullName: data.appUser.fullName,
+              photoURL: data.appUser.photoURL,
+              isModerator: data.appUser.isModerator,
+            });
+          } else setAppUser(null);
+        })
+        .finally(() => setAuthLoading(false));
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -80,9 +111,6 @@ function AppNavbarInner() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
-        setProfileMenuOpen(false);
-      }
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setNotifOpen(false);
       }
@@ -109,70 +137,93 @@ function AppNavbarInner() {
     if (result.url) window.location.href = result.url;
   };
 
-  const handleSignOut = async () => {
-    setProfileMenuOpen(false);
-    await signOut();
-    setAppUser(null);
-  };
-
-  const navLink = (label: string, href: string, isActive: boolean) => (
+  const navPill = (
+    href: string,
+    label: string,
+    Icon: React.ComponentType<{ className?: string }>,
+    active: boolean
+  ) => (
     <Link
       href={href}
-      className={`px-4 py-2 font-semibold transition-all text-sm ${
-        isActive ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-600 hover:text-gray-900"
+      className={`inline-flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[40px] ${
+        active
+          ? "text-[var(--brand)] bg-blue-50"
+          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
       }`}
     >
-      {label}
+      <Icon className="w-4 h-4 shrink-0 opacity-80" />
+      <span className="hidden xl:inline">{label}</span>
     </Link>
   );
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-3">
+    <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--surface)]/95 backdrop-blur-md">
+      <div className="max-w-[1128px] mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="flex h-14 items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
               <Image
                 src={logo}
-                alt="ScottyLinked Logo"
-                width={40}
-                height={40}
+                alt="ScottyLinked"
+                width={36}
+                height={36}
                 className="rounded-lg object-cover"
               />
-              <span className="text-xl font-bold text-gray-900">ScottyLinked</span>
+              <span className="text-lg font-bold text-gray-900 hidden sm:inline truncate">
+                ScottyLinked
+              </span>
             </Link>
           </div>
 
-          <div className="flex items-center gap-4">
-            <nav className="flex flex-wrap gap-1 items-center">
-              {navLink("Feed", "/", !onProfilePage && !onMessages && !onAdmin && activeTab === "feed")}
-              {navLink("Opportunities", "/?tab=opportunities", !onProfilePage && !onMessages && !onAdmin && activeTab === "opportunities")}
-              {navLink("Network", "/?tab=network", !onProfilePage && !onMessages && !onAdmin && activeTab === "network")}
-              {navLink("Profile", "/?tab=profile", (!onProfilePage && !onMessages && !onAdmin && activeTab === "profile") || (onProfilePage && !pathname.includes("/h/")))}
+          {/* Desktop primary nav — hidden on small screens (use MobileTabBar) */}
+          <nav
+            className="hidden md:flex items-center justify-center gap-0.5 flex-1 min-w-0 px-2"
+            aria-label="Main"
+          >
+            {navPill("/", "Feed", Home, isHomeTabActive("feed"))}
+            {navPill(
+              "/?tab=groups",
+              "Groups",
+              Briefcase,
+              isHomeTabActive("groups")
+            )}
+            {navPill(
+              "/?tab=network",
+              "Network",
+              Users,
+              isHomeTabActive("network")
+            )}
+            <Link
+              href="/messages"
+              className={`inline-flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[40px] ${
+                onMessages
+                  ? "text-[var(--brand)] bg-blue-50"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              }`}
+            >
+              <MessageCircle className="w-4 h-4 shrink-0 opacity-80" />
+              <span className="hidden xl:inline">Messages</span>
+            </Link>
+            {appUser?.isModerator && (
               <Link
-                href="/messages"
-                className={`px-4 py-2 font-semibold transition-all text-sm ${
-                  onMessages ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-600 hover:text-gray-900"
+                href="/admin/reports"
+                className={`inline-flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[40px] ${
+                  onAdmin
+                    ? "text-[var(--brand)] bg-blue-50"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                Messages
+                <Shield className="w-4 h-4 shrink-0 opacity-80" />
+                <span className="hidden xl:inline">Moderation</span>
               </Link>
-              {appUser?.isModerator && (
-                <Link
-                  href="/admin/reports"
-                  className={`px-4 py-2 font-semibold transition-all text-sm ${
-                    onAdmin ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  Moderation
-                </Link>
-              )}
-            </nav>
-            <div className="flex items-center gap-2">
-              {authLoading ? (
-                <span className="text-sm text-gray-500">Loading...</span>
-              ) : appUser ? (
-                <>
+            )}
+          </nav>
+
+          <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+            {authLoading ? (
+              <span className="text-sm text-[var(--muted)] px-2">…</span>
+            ) : appUser ? (
+              <>
                 <div className="relative" ref={notifRef}>
                   <button
                     type="button"
@@ -180,19 +231,19 @@ function AppNavbarInner() {
                       setNotifOpen((o) => !o);
                       if (!notifOpen) loadNotifications();
                     }}
-                    className="relative p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+                    className="relative p-2.5 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 min-h-[44px] min-w-[44px] flex items-center justify-center"
                     aria-label="Notifications"
                   >
-                    <span className="text-lg">🔔</span>
+                    <Bell className="w-5 h-5" />
                     {(notifData?.unread ?? 0) > 0 && (
-                      <span className="absolute top-0 right-0 min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full flex items-center justify-center">
+                      <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full flex items-center justify-center">
                         {notifData!.unread > 9 ? "9+" : notifData!.unread}
                       </span>
                     )}
                   </button>
                   {notifOpen && (
-                    <div className="absolute right-0 mt-1 w-80 max-h-96 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-2">
-                      <div className="flex items-center justify-between px-3 pb-2 border-b border-gray-100">
+                    <div className="absolute right-0 mt-1 w-[min(100vw-2rem,20rem)] max-h-96 overflow-y-auto bg-[var(--surface)] rounded-xl border border-[var(--border)] shadow-lg z-50 py-2">
+                      <div className="flex items-center justify-between px-3 pb-2 border-b border-[var(--border)]">
                         <span className="text-sm font-semibold text-gray-900">
                           Notifications
                         </span>
@@ -200,28 +251,32 @@ function AppNavbarInner() {
                           <button
                             type="button"
                             onClick={markAllRead}
-                            className="text-xs text-blue-600 hover:underline"
+                            className="text-xs text-[var(--brand)] hover:underline font-medium"
                           >
                             Mark all read
                           </button>
                         )}
                       </div>
                       {!notifData?.items?.length ? (
-                        <p className="px-3 py-6 text-sm text-gray-500 text-center">
+                        <p className="px-3 py-8 text-sm text-[var(--muted)] text-center">
                           No notifications yet.
                         </p>
                       ) : (
-                        <ul className="divide-y divide-gray-100">
+                        <ul className="divide-y divide-[var(--border)]">
                           {notifData.items.map((n) => (
                             <li
                               key={n.id}
-                              className={`px-3 py-2 text-sm ${
-                                n.read_at == null ? "bg-blue-50/50" : ""
+                              className={`px-3 py-2.5 text-sm ${
+                                n.read_at == null ? "bg-blue-50/40" : ""
                               }`}
                             >
-                              <p className="font-medium text-gray-900">{n.title}</p>
+                              <p className="font-medium text-gray-900">
+                                {n.title}
+                              </p>
                               {n.body && (
-                                <p className="text-gray-600 mt-0.5">{n.body}</p>
+                                <p className="text-[var(--muted)] mt-0.5 line-clamp-2">
+                                  {n.body}
+                                </p>
                               )}
                               <p className="text-xs text-gray-400 mt-1">
                                 {new Date(n.created_at).toLocaleString()}
@@ -233,52 +288,28 @@ function AppNavbarInner() {
                     </div>
                   )}
                 </div>
-                <div className="relative" ref={profileMenuRef}>
-                  <button
-                    type="button"
-                    onClick={() => setProfileMenuOpen((o) => !o)}
-                    className="flex items-center gap-2 rounded-lg py-1.5 pr-2 pl-1.5 hover:bg-gray-100 transition"
-                  >
-                    <Avatar
-                      text={appUser.fullName?.slice(0, 2).toUpperCase() ?? "?"}
-                      size="sm"
-                      imageUrl={appUser.photoURL}
-                    />
-                    <span className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
-                      {appUser.fullName}
-                    </span>
-                    <span className="text-gray-400 text-xs">▾</span>
-                  </button>
-                  {profileMenuOpen && (
-                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                      <Link
-                        href={appUser.id != null ? `/profile/${appUser.id}` : "/"}
-                        onClick={() => setProfileMenuOpen(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        View profile
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={handleSignOut}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Sign out
-                      </button>
-                    </div>
-                  )}
-                </div>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleGoogleSignIn}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                {/* Messages icon on small screens when bottom bar not showing on other pages */}
+                <Link
+                  href="/messages"
+                  className={`md:hidden p-2.5 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center ${
+                    onMessages
+                      ? "text-[var(--brand)] bg-blue-50"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                  aria-label="Messages"
                 >
-                  Login with Google
-                </button>
-              )}
-            </div>
+                  <MessageCircle className="w-5 h-5" />
+                </Link>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                className="px-4 py-2 text-sm font-medium text-white bg-[var(--brand)] rounded-lg hover:bg-[var(--brand-hover)] min-h-[40px]"
+              >
+                Log in
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -286,14 +317,18 @@ function AppNavbarInner() {
   );
 }
 
-export default function AppNavbar() {
+export default function AppNavbar({
+  initialAppUser,
+}: {
+  initialAppUser: AppUser | null;
+}) {
   return (
     <Suspense
       fallback={
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-50 h-16" />
+        <header className="sticky top-0 z-50 h-14 border-b border-[var(--border)] bg-[var(--surface)]" />
       }
     >
-      <AppNavbarInner />
+      <AppNavbarInner initialAppUser={initialAppUser} />
     </Suspense>
   );
 }

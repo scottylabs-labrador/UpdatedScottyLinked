@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { AppPageContainer } from "@/app/_components/AppShell";
 import { Research } from "@/lib/types";
 
 export default function ResearchPage() {
@@ -23,12 +24,17 @@ export default function ResearchPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-12">
-      <h1 className="text-4xl font-bold text-center mb-10 text-gray-800">Research Opportunities</h1>
+    <AppPageContainer maxWidthClass="max-w-6xl">
+        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-8 text-gray-900 tracking-tight">
+          Research opportunities
+        </h1>
 
-      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-        {researches.map((r) => (
-          <div key={r.id} className="rounded-2xl shadow-md bg-white p-6 transition-transform hover:scale-[1.02] hover:shadow-lg">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {researches.map((r) => (
+            <div
+              key={r.id}
+              className="card-surface p-6 shadow-sm rounded-[var(--radius-card)] transition hover:border-gray-300"
+            >
             {r.position ? (
               <>
                 <h2 className="text-xl font-semibold text-gray-800 mb-2">{r.position}</h2>
@@ -61,7 +67,7 @@ export default function ResearchPage() {
             )}
           </div>
         ))}
-      </div>
-    </main>
+        </div>
+    </AppPageContainer>
   );
 }

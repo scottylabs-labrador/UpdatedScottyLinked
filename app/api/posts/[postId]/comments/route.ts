@@ -1,19 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
-import { getHandleFromEmail, isAndrewEmail, getAppUserByHandle } from "@/lib/auth/db";
-import { getCommentsForPost, addComment } from "@/lib/db/posts";
+import { getCurrentAppUserId } from "@/lib/api/currentUser";
+import {
+  getCommentsForPost,
+  addComment,
+  viewerMayAccessPost,
+} from "@/lib/db/posts";
 import { insertNotification } from "@/lib/db/notifications";
 import { getUserById } from "@/lib/db/users";
 import { NextResponse } from "next/server";
-
-async function getCurrentAppUserId(): Promise<number | null> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user?.email || !isAndrewEmail(user.email)) return null;
-  const handle = getHandleFromEmail(user.email);
-  if (!handle) return null;
-  const appUser = await getAppUserByHandle(handle);
-  return appUser?.id ?? null;
-}
 
 /** GET: list comments for the post. */
 export async function GET(
@@ -24,6 +18,12 @@ export async function GET(
   const id = parseInt(postId, 10);
   if (isNaN(id)) {
     return NextResponse.json({ error: "Invalid post id" }, { status: 400 });
+  }
+
+  const viewerId = await getCurrentAppUserId();
+  const allowed = await viewerMayAccessPost(id, viewerId);
+  if (!allowed) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   const comments = await getCommentsForPost(id);
@@ -44,6 +44,11 @@ export async function POST(
   const id = parseInt(postId, 10);
   if (isNaN(id)) {
     return NextResponse.json({ error: "Invalid post id" }, { status: 400 });
+  }
+
+  const allowed = await viewerMayAccessPost(id, currentUserId);
+  if (!allowed) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   let body: { content?: string };

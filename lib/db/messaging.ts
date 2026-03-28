@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { hasBlockBetween } from "@/lib/db/blocks";
-import { getUserById } from "@/lib/db/users";
+import { getUsersByIds } from "@/lib/db/users";
 
 export function sortedParticipantIds(a: number, b: number): [number, number] {
   return a < b ? [a, b] : [b, a];
@@ -55,8 +55,9 @@ export async function listConversationPreviews(
   userId: number
 ): Promise<ConversationPreview[]> {
   if (!supabaseAdmin) return [];
+  const db = supabaseAdmin;
 
-  const { data: convs, error } = await supabaseAdmin
+  const { data: convs, error } = await db
     .from("conversations")
     .select("id, participant_low_id, participant_high_id, updated_at")
     .or(
@@ -67,28 +68,47 @@ export async function listConversationPreviews(
 
   if (error || !convs?.length) return [];
 
-  const out: ConversationPreview[] = [];
-  for (const c of convs as {
+  const rows = convs as {
     id: number;
     participant_low_id: number;
     participant_high_id: number;
     updated_at: string;
-  }[]) {
+  }[];
+
+  const otherIds = [
+    ...new Set(
+      rows.map((c) =>
+        c.participant_low_id === userId
+          ? c.participant_high_id
+          : c.participant_low_id
+      )
+    ),
+  ];
+  const users = await getUsersByIds(otherIds);
+  const userById = new Map(users.map((u) => [u.id, u]));
+
+  const lastMsgResults = await Promise.all(
+    rows.map((c) =>
+      db
+        .from("direct_messages")
+        .select("body, created_at, sender_id, read_at")
+        .eq("conversation_id", c.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    )
+  );
+
+  const out: ConversationPreview[] = [];
+  rows.forEach((c, i) => {
     const otherId =
       c.participant_low_id === userId
         ? c.participant_high_id
         : c.participant_low_id;
-    const other = await getUserById(otherId);
-    if (!other) continue;
+    const other = userById.get(otherId);
+    if (!other) return;
 
-    const { data: lastMsg } = await supabaseAdmin
-      .from("direct_messages")
-      .select("body, created_at, sender_id, read_at")
-      .eq("conversation_id", c.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
+    const lastMsg = lastMsgResults[i].data;
     const lm = lastMsg as
       | {
           body: string;
@@ -96,7 +116,8 @@ export async function listConversationPreviews(
           sender_id: number;
           read_at: string | null;
         }
-      | null;
+      | null
+      | undefined;
 
     out.push({
       conversationId: c.id,
@@ -110,7 +131,7 @@ export async function listConversationPreviews(
         lm.sender_id !== userId &&
         lm.read_at == null,
     });
-  }
+  });
 
   return out;
 }

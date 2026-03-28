@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import AppNavbar from "@/app/_components/AppNavbar";
+import { AppPageContainer } from "@/app/_components/AppShell";
 
 type ReportRow = {
   id: number;
@@ -80,17 +80,16 @@ export default function AdminReportsPage() {
 
   if (forbidden) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <AppNavbar />
-        <p className="text-center py-12 text-gray-600">Redirecting…</p>
-      </div>
+      <AppPageContainer maxWidthClass="max-w-5xl">
+        <p className="text-center py-12 text-[var(--muted)] text-sm">
+          Redirecting…
+        </p>
+      </AppPageContainer>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppNavbar />
-      <div className="max-w-5xl mx-auto py-8 px-4">
+    <AppPageContainer maxWidthClass="max-w-5xl">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Moderation queue</h1>
           <div className="flex items-center gap-2">
@@ -111,15 +110,15 @@ export default function AdminReportsPage() {
         {loading ? (
           <p className="text-gray-500">Loading reports…</p>
         ) : reports.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-600">
+          <div className="card-surface p-10 text-center text-[var(--muted)] text-sm shadow-sm">
             No reports in this view.
           </div>
         ) : (
-          <ul className="space-y-4">
+          <ul className="space-y-3">
             {reports.map((r) => (
               <li
                 key={r.id}
-                className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm"
+                className="card-surface p-5 shadow-sm"
               >
                 <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-2">
                   <span className="font-mono">#{r.id}</span>
@@ -187,7 +186,6 @@ export default function AdminReportsPage() {
             ))}
           </ul>
         )}
-      </div>
-    </div>
+    </AppPageContainer>
   );
 }

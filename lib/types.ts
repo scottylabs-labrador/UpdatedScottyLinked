@@ -1,5 +1,11 @@
 // ==================== DATABASE SCHEMA TYPES ====================
 
+/** Affiliation row stored in users.organizations (JSON). */
+export interface ProfileOrganization {
+  name: string;
+  role?: string;
+}
+
 /**
  * User table from database schema
  * Matches the users table structure
@@ -11,8 +17,17 @@ export interface User {
   photoURL: string | null;
   bannerURL: string | null;
   major: string | null;
+  minors: string | null;
+  degree: string | null;
+  college: string | null;
   year: string | null;
   bio: string | null;
+  linkedinUrl: string | null;
+  githubUrl: string | null;
+  portfolioUrl: string | null;
+  resumeUrl: string | null;
+  campusRoles: string[];
+  organizations: ProfileOrganization[];
   created_at: string;
   updated_at: string | null;
   /** Present when loaded from DB (moderation). */
@@ -35,6 +50,8 @@ export interface Project {
   description: string;
   level: string;
   type: string;
+  /** When set, listing is scoped to this group (members only). */
+  groupId?: number | null;
 }
 
 /**
@@ -56,11 +73,13 @@ export interface Connection {
 export interface Post {
   id: number;
   authorID: number; // Foreign key to users.id
-  audience: string; // e.g., "public", "connections"
+  audience: string; // e.g., "public", "connections", "group"
   title: string;
   content: string;
   tags: string[]; // Array of text values
   created_at: string;
+  /** When set, post is visible only to members of this group. */
+  groupId?: number | null;
 }
 
 /**
@@ -105,6 +124,12 @@ export interface FeedPost {
   content: string;
   tags?: string[];
   audience?: string;
+  /** Set for group-scoped posts (legacy / primary group). */
+  groupId?: number | null;
+  /** Human-readable visibility for badges (multi-audience). */
+  visibilitySummary?: string;
+  /** Group IDs in visibility rules (for feed filter chips). */
+  visibilityGroupIds?: number[];
   likes: number;
   comments: number;
   /** True if current user has liked this post (only set when fetched with user context). */
@@ -112,8 +137,7 @@ export interface FeedPost {
 }
 
 /**
- * Opportunity type for UI components
- * Used in opportunities component
+ * Opportunity type for UI components (group-scoped listings).
  */
 export interface Opportunity {
   id: number;
@@ -147,20 +171,31 @@ export interface Profile {
 }
 
 /**
- * UserProfile type for UI components (Profile View)
- * Extended user profile with additional UI fields
+ * UserProfile for profile tab and public profile API
  */
 export interface UserProfile {
+  id: number;
   name: string;
+  handle: string;
+  /** Initials for Avatar fallback */
   avatar: string;
   photoURL?: string | null;
+  bannerURL?: string | null;
   major: string;
+  minors: string;
+  degree: string;
+  college: string;
   year: string;
   email: string;
   skills: string[];
   bio: string;
   connections: number;
-  gpa: string;
+  linkedinUrl: string;
+  githubUrl: string;
+  portfolioUrl: string;
+  resumeUrl: string;
+  campusRoles: string[];
+  organizations: ProfileOrganization[];
 }
 
 // ==================== ADDITIONAL TYPES ====================
@@ -183,12 +218,70 @@ export interface Research {
  * NewPost type for creating posts
  * Used in posts creation functions
  */
+export type PostVisibilityScope = "public" | "connections" | "private" | "group";
+
 export interface NewPost {
   title: string;
   content: string;
   authorId: string | number;
   tags?: string[];
+  /** Legacy single audience when `visibility` is omitted. */
   audience: string;
+  /** Legacy single group. */
+  groupId?: number | null;
+  /**
+   * OR semantics: viewers who match any rule can see the post.
+   * When non-empty, takes precedence over `audience` / `groupId`.
+   */
+  visibility?: Array<{ scope: PostVisibilityScope; groupId?: number }>;
+}
+
+/** Community group (database `groups` table). */
+export interface CommunityGroup {
+  id: number;
+  name: string;
+  description: string;
+  createdBy: number;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export type GroupMembershipRole = "owner" | "moderator" | "member";
+
+export type GroupJoinRequestStatus =
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "withdrawn";
+
+export interface GroupMembershipRow {
+  groupId: number;
+  userId: number;
+  role: GroupMembershipRole;
+  created_at: string;
+}
+
+export interface GroupJoinRequestRow {
+  id: number;
+  groupId: number;
+  applicantId: number;
+  message: string | null;
+  status: GroupJoinRequestStatus;
+  created_at: string;
+  reviewedBy: number | null;
+  reviewed_at: string | null;
+}
+
+/** Group card on the home Groups tab (from GET /api/groups). */
+export interface GroupListItem {
+  id: number;
+  name: string;
+  description: string;
+  createdBy: number;
+  created_at: string;
+  memberCount: number;
+  myRole: GroupMembershipRole | null;
+  joinRequestStatus: GroupJoinRequestStatus | null;
 }
 
 // ==================== UTILITY TYPES ====================
@@ -201,7 +294,7 @@ export type ConnectionStatus = "pending" | "accepted" | "rejected";
 /**
  * Post audience enum
  */
-export type PostAudience = "public" | "connections" | "private";
+export type PostAudience = "public" | "connections" | "private" | "group";
 
 /**
  * Partial type for updating user profile

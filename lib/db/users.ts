@@ -1,14 +1,52 @@
 import { supabase } from "@/lib/supabaseClient";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { User, Profile, UserProfile } from "@/lib/types";
+import {
+  User,
+  Profile,
+  UserProfile,
+  ProfileOrganization,
+} from "@/lib/types";
 
 // Re-export User for backwards compatibility
 export type { User };
 
-/** Map DB row (snake_case: fullname, photourl, bannerurl) to User (camelCase). */
-function rowToUser(row: Record<string, unknown> | null): User | null {
+function parseOrganizations(raw: unknown): ProfileOrganization[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ProfileOrganization[] = [];
+  for (const item of raw) {
+    if (
+      item &&
+      typeof item === "object" &&
+      "name" in item &&
+      typeof (item as { name: unknown }).name === "string"
+    ) {
+      const name = String((item as { name: string }).name)
+        .trim()
+        .slice(0, 120);
+      if (!name) continue;
+      const role =
+        "role" in item &&
+        typeof (item as { role?: unknown }).role === "string"
+          ? String((item as { role: string }).role).trim().slice(0, 80)
+          : undefined;
+      out.push(role ? { name, role } : { name });
+    }
+    if (out.length >= 24) break;
+  }
+  return out;
+}
+
+/** Map DB row (snake_case) to User (camelCase). Exported for auth/db. */
+export function rowToUser(row: Record<string, unknown> | null): User | null {
   if (!row || typeof row.id !== "number") return null;
   const skillsRaw = row.skills as string[] | undefined | null;
+  const campusRaw = row.campus_roles as string[] | undefined | null;
+  const campusRoles = Array.isArray(campusRaw)
+    ? campusRaw
+        .map((s) => String(s).trim())
+        .filter(Boolean)
+        .slice(0, 24)
+    : [];
   return {
     id: row.id as number,
     handle: (row.handle as string) ?? "",
@@ -16,12 +54,61 @@ function rowToUser(row: Record<string, unknown> | null): User | null {
     photoURL: (row.photourl as string | null) ?? (row.photoURL as string | null) ?? null,
     bannerURL: (row.bannerurl as string | null) ?? (row.bannerURL as string | null) ?? null,
     major: (row.major as string | null) ?? null,
+    minors: (row.minors as string | null) ?? null,
+    degree: (row.degree as string | null) ?? null,
+    college: (row.college as string | null) ?? null,
     year: (row.year as string | null) ?? null,
     bio: (row.bio as string | null) ?? null,
+    linkedinUrl: (row.linkedin_url as string | null) ?? null,
+    githubUrl: (row.github_url as string | null) ?? null,
+    portfolioUrl: (row.portfolio_url as string | null) ?? null,
+    resumeUrl: (row.resume_url as string | null) ?? null,
+    campusRoles,
+    organizations: parseOrganizations(row.organizations),
     created_at: (row.created_at as string) ?? "",
     updated_at: (row.updated_at as string | null) ?? null,
     isModerator: !!(row.is_moderator as boolean | undefined),
     skills: Array.isArray(skillsRaw) ? skillsRaw : [],
+  };
+}
+
+function avatarInitials(name: string | null): string {
+  if (!name) return "?";
+  const parts = name.split(" ");
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+}
+
+/** Map User to API / UI profile shape. */
+export function userToUserProfile(
+  user: User,
+  connectionCount = 0
+): UserProfile {
+  const email = user.handle ? `${user.handle}@andrew.cmu.edu` : "";
+  return {
+    id: user.id,
+    name: user.fullName,
+    handle: user.handle,
+    avatar: avatarInitials(user.fullName),
+    photoURL: user.photoURL ?? null,
+    bannerURL: user.bannerURL ?? null,
+    major: user.major?.trim() || "Undeclared",
+    minors: user.minors?.trim() || "",
+    degree: user.degree?.trim() || "",
+    college: user.college?.trim() || "",
+    year: user.year?.trim() || "Unknown",
+    email,
+    skills: user.skills ?? [],
+    bio: user.bio?.trim() || "",
+    connections: connectionCount,
+    linkedinUrl: user.linkedinUrl?.trim() || "",
+    githubUrl: user.githubUrl?.trim() || "",
+    portfolioUrl: user.portfolioUrl?.trim() || "",
+    resumeUrl: user.resumeUrl?.trim() || "",
+    campusRoles: user.campusRoles ?? [],
+    organizations: user.organizations ?? [],
   };
 }
 
@@ -160,7 +247,6 @@ export async function getUserById(userId: number): Promise<User | null> {
 
 /**
  * Fetch multiple users given an array of IDs.
- * Useful for feeds, followers, connections, etc.
  */
 export async function getUsersByIds(userIds: number[]): Promise<User[]> {
   if (!userIds || userIds.length === 0) return [];
@@ -188,15 +274,23 @@ function userToRow(u: Partial<User>): Record<string, unknown> {
   if (u.bannerURL !== undefined) row.bannerurl = u.bannerURL;
   if (u.handle !== undefined) row.handle = u.handle;
   if (u.major !== undefined) row.major = u.major;
+  if (u.minors !== undefined) row.minors = u.minors;
+  if (u.degree !== undefined) row.degree = u.degree;
+  if (u.college !== undefined) row.college = u.college;
   if (u.year !== undefined) row.year = u.year;
   if (u.bio !== undefined) row.bio = u.bio;
   if (u.skills !== undefined) row.skills = u.skills;
+  if (u.linkedinUrl !== undefined) row.linkedin_url = u.linkedinUrl;
+  if (u.githubUrl !== undefined) row.github_url = u.githubUrl;
+  if (u.portfolioUrl !== undefined) row.portfolio_url = u.portfolioUrl;
+  if (u.resumeUrl !== undefined) row.resume_url = u.resumeUrl;
+  if (u.campusRoles !== undefined) row.campus_roles = u.campusRoles;
+  if (u.organizations !== undefined) row.organizations = u.organizations;
   return row;
 }
 
 /**
  * Update a user's profile fields.
- * Only fields provided in updates will be changed.
  */
 export async function updateUserProfile(
   userId: number,
@@ -219,8 +313,7 @@ export async function updateUserProfile(
 }
 
 /**
- * (Optional) Create a new user entry.
- * Uses DB column names (fullname, photourl, bannerurl).
+ * Create a new user entry.
  */
 export async function createUser(user: Omit<User, "id">): Promise<User | null> {
   const row = {
@@ -229,8 +322,17 @@ export async function createUser(user: Omit<User, "id">): Promise<User | null> {
     photourl: user.photoURL ?? null,
     bannerurl: user.bannerURL ?? null,
     major: user.major ?? null,
+    minors: user.minors ?? null,
+    degree: user.degree ?? null,
+    college: user.college ?? null,
     year: user.year ?? null,
     bio: user.bio ?? null,
+    linkedin_url: user.linkedinUrl ?? null,
+    github_url: user.githubUrl ?? null,
+    portfolio_url: user.portfolioUrl ?? null,
+    resume_url: user.resumeUrl ?? null,
+    campus_roles: user.campusRoles ?? [],
+    organizations: user.organizations ?? [],
     created_at: new Date().toISOString(),
     updated_at: null,
   };
@@ -259,7 +361,7 @@ export async function getProfiles(
     const { data: users, error } = await supabase
       .from("users")
       .select("*")
-      .neq("id", currentUserId) // Exclude current user
+      .neq("id", currentUserId)
       .limit(limit)
       .order("created_at", { ascending: false });
 
@@ -270,15 +372,12 @@ export async function getProfiles(
 
     if (!users) return [];
 
-    const userList = (users as Record<string, unknown>[]).map((row) => rowToUser(row)).filter((u): u is User => u != null);
+    const userList = (users as Record<string, unknown>[])
+      .map((row) => rowToUser(row))
+      .filter((u): u is User => u != null);
 
-    // Transform users to Profile format and get connection counts
     const profiles: Profile[] = userList.map((user) => {
-      // Connection counts require admin access, set to 0 for now
-      // Can be implemented via API route if needed
       const connectionCount = 0;
-
-      // Generate avatar initials
       const getAvatarInitials = (name: string | null): string => {
         if (!name) return "?";
         const parts = name.split(" ");
@@ -308,15 +407,6 @@ export async function getProfiles(
   }
 }
 
-function avatarInitials(name: string | null): string {
-  if (!name) return "?";
-  const parts = name.split(" ");
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-}
-
 /** Map a User row to Network `Profile` card shape. */
 export function userToNetworkProfile(user: User): Profile {
   return {
@@ -334,7 +424,6 @@ export function userToNetworkProfile(user: User): Profile {
 
 /**
  * Get a single user as UserProfile format for profile view
- * Note: email and gpa are not in the schema, so we'll use handle as email placeholder
  */
 export async function getUserProfile(
   userId: number
@@ -342,36 +431,7 @@ export async function getUserProfile(
   try {
     const user = await getUserById(userId);
     if (!user) return null;
-
-    // Connection counts require admin access, set to 0 for now
-    // Can be implemented via API route if needed
-    const connectionCount = 0;
-
-    // Generate avatar initials
-    const getAvatarInitials = (name: string | null): string => {
-      if (!name) return "?";
-      const parts = name.split(" ");
-      if (parts.length >= 2) {
-        return (parts[0][0] + parts[1][0]).toUpperCase();
-      }
-      return name.substring(0, 2).toUpperCase();
-    };
-
-    // Use handle as email placeholder (format: handle@andrew.cmu.edu)
-    const email = user.handle ? `${user.handle}@andrew.cmu.edu` : "";
-
-    return {
-      name: user.fullName,
-      avatar: getAvatarInitials(user.fullName),
-      photoURL: user.photoURL ?? null,
-      major: user.major || "Undeclared",
-      year: user.year || "Unknown",
-      email: email,
-      skills: user.skills ?? [],
-      bio: user.bio || "",
-      connections: connectionCount,
-      gpa: "N/A",
-    };
+    return userToUserProfile(user, 0);
   } catch (error) {
     console.error("Error in getUserProfile:", error);
     return null;

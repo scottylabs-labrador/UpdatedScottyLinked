@@ -24,6 +24,8 @@ The app supports **Login with Google** restricted to **@andrew.cmu.edu** emails.
    - **Trust & moderation** (reports, blocks, moderator flag): run [`supabase/migrations/003_trust_moderation.sql`](supabase/migrations/003_trust_moderation.sql). Adds `users.is_moderator`, `reports`, and `blocks`. Assign moderators in SQL, e.g. `update users set is_moderator = true where handle = 'yourhandle';`, or set comma-separated **Andrew** handles in `MODERATOR_HANDLES` for bootstrap until DB flags are set.
    - **Discovery (skills)**: run [`supabase/migrations/004_discovery_skills.sql`](supabase/migrations/004_discovery_skills.sql) for `users.skills` (`text[]`).
    - **Direct messaging**: run [`supabase/migrations/005_messaging.sql`](supabase/migrations/005_messaging.sql) for `conversations` and `direct_messages`.
+   - **Profile enrichment** (minors, degree, college, social links, campus roles, organizations): run [`supabase/migrations/006_profile_enrichment.sql`](supabase/migrations/006_profile_enrichment.sql). For **avatar/banner uploads**, create a public Storage bucket named `profile-media` in the Supabase Dashboard (or run `insert into storage.buckets (id, name, public) values ('profile-media', 'profile-media', true) on conflict (id) do nothing;`). Uploads use the service role from `/api/me/upload`.
+   - **Groups** (communities, join requests, group-only posts and listings): run [`supabase/migrations/007_groups.sql`](supabase/migrations/007_groups.sql). Adds `groups`, `group_memberships`, `group_join_requests`, and nullable `group_id` on `posts` and `projects`. Legacy project rows with `group_id` null are hidden from the app.
 
 ### Deploying to Vercel
 

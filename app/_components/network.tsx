@@ -195,7 +195,11 @@ export default function Network({
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading profiles...</div>;
+    return (
+      <div className="text-center py-16 text-[var(--muted)] text-sm">
+        Loading network…
+      </div>
+    );
   }
 
   const searchActive =
@@ -205,14 +209,14 @@ export default function Network({
     filterSkill.trim();
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-6 space-y-3">
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="mb-6 card-surface p-4 shadow-sm space-y-3">
         <input
           type="text"
           placeholder="Search by name or Andrew ID..."
           value={searchQ}
           onChange={(e) => setSearchQ(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+          className="w-full px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 text-gray-900 placeholder:text-gray-400"
         />
         <div className="flex flex-col sm:flex-row gap-3">
           <input
@@ -220,21 +224,21 @@ export default function Network({
             placeholder="Filter by major (optional)"
             value={filterMajor}
             onChange={(e) => setFilterMajor(e.target.value)}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+            className="flex-1 px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 text-gray-900"
           />
           <input
             type="text"
             placeholder="Class year e.g. 2026 (optional)"
             value={filterYear}
             onChange={(e) => setFilterYear(e.target.value)}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+            className="flex-1 px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 text-gray-900"
           />
           <input
             type="text"
             placeholder="Skill contains (optional)"
             value={filterSkill}
             onChange={(e) => setFilterSkill(e.target.value)}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+            className="flex-1 px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 text-gray-900"
           />
         </div>
         {searchLoading && searchActive && (
@@ -244,19 +248,19 @@ export default function Network({
 
       {searchActive && searchProfiles && (
         <div className="mb-10">
-          <h2 className="text-lg font-semibold mb-2 text-black">
+          <h2 className="text-base font-semibold mb-3 text-gray-900">
             Search results
           </h2>
           {searchProfiles.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+            <div className="card-surface p-8 text-center text-[var(--muted)] text-sm shadow-sm">
               No students match your search.
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-3">
               {searchProfiles.map((profile) => (
                 <div
                   key={profile.id}
-                  className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition"
+                  className="card-surface p-5 shadow-sm hover:border-gray-300/90 transition"
                 >
                   <div className="flex items-start gap-4 mb-4">
                     <Link href={`/profile/${profile.id}`} className="flex-shrink-0">
@@ -269,7 +273,7 @@ export default function Network({
                     <div className="flex-1">
                       <Link
                         href={`/profile/${profile.id}`}
-                        className="text-lg font-bold text-gray-900 hover:text-blue-600 hover:underline"
+                        className="text-lg font-bold text-gray-900 hover:text-[var(--brand)] hover:underline"
                       >
                         {profile.name}
                       </Link>
@@ -301,7 +305,7 @@ export default function Network({
                         type="button"
                         onClick={() => handleConnect(profile.id)}
                         disabled={connectingUsers.has(profile.id)}
-                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold disabled:opacity-50"
+                        className="w-full px-4 py-2.5 min-h-[40px] bg-[var(--brand)] text-white rounded-lg hover:bg-[var(--brand-hover)] text-sm font-semibold disabled:opacity-50"
                       >
                         {connectingUsers.has(profile.id)
                           ? "Connecting..."
@@ -322,7 +326,7 @@ export default function Network({
             Connection requests
           </h2>
           {pendingReceived.length > 0 && (
-            <div className="bg-white rounded-lg shadow p-4 mb-4">
+            <div className="card-surface shadow-sm p-4 mb-4">
               <h3 className="text-sm font-medium text-gray-700 mb-3">
                 Pending requests you received
               </h3>
@@ -350,7 +354,7 @@ export default function Network({
                         type="button"
                         onClick={() => handleAccept(r.id)}
                         disabled={actioningId === r.id}
-                        className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                        className="px-3 py-1.5 text-sm font-medium text-white bg-[var(--brand)] rounded-lg hover:bg-[var(--brand-hover)] disabled:opacity-50"
                       >
                         Accept
                       </button>
@@ -369,7 +373,7 @@ export default function Network({
             </div>
           )}
           {pendingSent.length > 0 && (
-            <div className="bg-white rounded-lg shadow p-4">
+            <div className="card-surface shadow-sm p-4">
               <h3 className="text-sm font-medium text-gray-700 mb-3">
                 Pending requests you sent
               </h3>
@@ -413,7 +417,7 @@ export default function Network({
         Your Connections
       </h2>
       {connectedProfiles.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500 mb-6">
+        <div className="card-surface shadow-sm p-6 text-center text-gray-500 mb-6">
           No connections yet.
         </div>
       ) : (
@@ -421,7 +425,7 @@ export default function Network({
           {connectedProfiles.map((profile) => (
             <div
               key={profile.id}
-              className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition"
+              className="card-surface shadow-sm p-6 hover:border-gray-300/90 transition"
             >
               <div className="flex items-start gap-4 mb-4">
                 <Link href={`/profile/${profile.id}`} className="flex-shrink-0">
@@ -434,7 +438,7 @@ export default function Network({
                 <div className="flex-1">
                   <Link
                     href={`/profile/${profile.id}`}
-                    className="text-lg font-bold text-gray-900 hover:text-blue-600 hover:underline"
+                    className="text-lg font-bold text-gray-900 hover:text-[var(--brand)] hover:underline"
                   >
                     {profile.name}
                   </Link>
@@ -470,7 +474,7 @@ export default function Network({
         Discover New People
       </h2>
       {notConnectedProfiles.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+        <div className="card-surface shadow-sm p-6 text-center text-gray-500">
           No new people to discover right now.
         </div>
       ) : (
@@ -478,7 +482,7 @@ export default function Network({
           {notConnectedProfiles.map((profile) => (
             <div
               key={profile.id}
-              className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition"
+              className="card-surface shadow-sm p-6 hover:border-gray-300/90 transition"
             >
               <div className="flex items-start gap-4 mb-4">
                 <Link href={`/profile/${profile.id}`} className="flex-shrink-0">
@@ -491,7 +495,7 @@ export default function Network({
                 <div className="flex-1">
                   <Link
                     href={`/profile/${profile.id}`}
-                    className="text-lg font-bold text-gray-900 hover:text-blue-600 hover:underline"
+                    className="text-lg font-bold text-gray-900 hover:text-[var(--brand)] hover:underline"
                   >
                     {profile.name}
                   </Link>
@@ -519,7 +523,7 @@ export default function Network({
                 <button
                   onClick={() => handleConnect(profile.id)}
                   disabled={connectingUsers.has(profile.id)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-[var(--brand)] text-white rounded-lg hover:bg-[var(--brand-hover)] transition text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {connectingUsers.has(profile.id)
                     ? "Connecting..."

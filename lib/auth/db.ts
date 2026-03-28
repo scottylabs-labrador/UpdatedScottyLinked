@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { User } from "@/lib/types";
+import { User, ProfileOrganization } from "@/lib/types";
+import { rowToUser } from "@/lib/db/users";
 
 const ANDREW_DOMAIN = "@andrew.cmu.edu";
 
@@ -10,29 +11,6 @@ export function getHandleFromEmail(email: string): string | null {
 
 export function isAndrewEmail(email: string): boolean {
   return email?.toLowerCase().endsWith(ANDREW_DOMAIN) ?? false;
-}
-
-/**
- * Map DB row (snake_case columns) to User type (camelCase).
- * Postgres/Supabase return lowercase column names (fullname, photourl, bannerurl).
- */
-function rowToUser(row: Record<string, unknown> | null): User | null {
-  if (!row || typeof row.id !== "number") return null;
-  const skillsRaw = row.skills as string[] | undefined | null;
-  return {
-    id: row.id as number,
-    handle: (row.handle as string) ?? "",
-    fullName: (row.fullname as string) ?? (row.fullName as string) ?? "",
-    photoURL: (row.photourl as string | null) ?? (row.photoURL as string | null) ?? null,
-    bannerURL: (row.bannerurl as string | null) ?? (row.bannerURL as string | null) ?? null,
-    major: (row.major as string | null) ?? null,
-    year: (row.year as string | null) ?? null,
-    bio: (row.bio as string | null) ?? null,
-    created_at: (row.created_at as string) ?? "",
-    updated_at: (row.updated_at as string | null) ?? null,
-    isModerator: !!(row.is_moderator as boolean | undefined),
-    skills: Array.isArray(skillsRaw) ? skillsRaw : [],
-  };
 }
 
 /**
@@ -57,7 +35,6 @@ export async function getAppUserByHandle(handle: string): Promise<User | null> {
 
 /**
  * Create a new app user (server-only, uses admin client).
- * Uses DB column names (lowercase: fullname, photourl, bannerurl).
  */
 export async function createAppUser(params: {
   handle: string;
@@ -75,8 +52,17 @@ export async function createAppUser(params: {
       photourl: params.photoURL ?? null,
       bannerurl: null,
       major: null,
+      minors: null,
+      degree: null,
+      college: null,
       year: null,
       bio: null,
+      linkedin_url: null,
+      github_url: null,
+      portfolio_url: null,
+      resume_url: null,
+      campus_roles: [],
+      organizations: [],
       created_at: now,
       updated_at: now,
     })
@@ -91,21 +77,31 @@ export async function createAppUser(params: {
   return rowToUser(data as Record<string, unknown>);
 }
 
+export type AppUserUpdates = {
+  fullName?: string;
+  major?: string | null;
+  minors?: string | null;
+  degree?: string | null;
+  college?: string | null;
+  year?: string | null;
+  bio?: string | null;
+  photoURL?: string | null;
+  bannerURL?: string | null;
+  skills?: string[];
+  linkedinUrl?: string | null;
+  githubUrl?: string | null;
+  portfolioUrl?: string | null;
+  resumeUrl?: string | null;
+  campusRoles?: string[];
+  organizations?: ProfileOrganization[];
+};
+
 /**
  * Update an app user by id (server-only, uses admin client).
- * Only provided fields are updated. Uses DB column names.
  */
 export async function updateAppUser(
   userId: number,
-  updates: {
-    fullName?: string;
-    major?: string | null;
-    year?: string | null;
-    bio?: string | null;
-    photoURL?: string | null;
-    bannerURL?: string | null;
-    skills?: string[];
-  }
+  updates: AppUserUpdates
 ): Promise<User | null> {
   if (!supabaseAdmin) return null;
 
@@ -114,11 +110,20 @@ export async function updateAppUser(
   };
   if (updates.fullName !== undefined) row.fullname = updates.fullName;
   if (updates.major !== undefined) row.major = updates.major;
+  if (updates.minors !== undefined) row.minors = updates.minors;
+  if (updates.degree !== undefined) row.degree = updates.degree;
+  if (updates.college !== undefined) row.college = updates.college;
   if (updates.year !== undefined) row.year = updates.year;
   if (updates.bio !== undefined) row.bio = updates.bio;
   if (updates.photoURL !== undefined) row.photourl = updates.photoURL;
   if (updates.bannerURL !== undefined) row.bannerurl = updates.bannerURL;
   if (updates.skills !== undefined) row.skills = updates.skills;
+  if (updates.linkedinUrl !== undefined) row.linkedin_url = updates.linkedinUrl;
+  if (updates.githubUrl !== undefined) row.github_url = updates.githubUrl;
+  if (updates.portfolioUrl !== undefined) row.portfolio_url = updates.portfolioUrl;
+  if (updates.resumeUrl !== undefined) row.resume_url = updates.resumeUrl;
+  if (updates.campusRoles !== undefined) row.campus_roles = updates.campusRoles;
+  if (updates.organizations !== undefined) row.organizations = updates.organizations;
 
   const { data, error } = await supabaseAdmin
     .from("users")
@@ -137,7 +142,6 @@ export async function updateAppUser(
 
 /**
  * Ensure an app user exists for the given handle; create if unseen.
- * Returns the user (existing or newly created).
  */
 export async function ensureAppUser(params: {
   handle: string;

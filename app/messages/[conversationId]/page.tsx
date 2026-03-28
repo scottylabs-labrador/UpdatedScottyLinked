@@ -3,8 +3,8 @@
 import React, { useCallback, useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import AppNavbar from "@/app/_components/AppNavbar";
 import Avatar from "@/app/_components/Avatar";
+import { AppPageContainer } from "@/app/_components/AppShell";
 
 type Msg = {
   id: number;
@@ -91,26 +91,26 @@ export default function MessageThreadPage() {
 
   if (isNaN(id)) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <AppNavbar />
-        <p className="text-center py-12 text-gray-600">Invalid conversation</p>
-      </div>
+      <AppPageContainer>
+          <p className="text-center py-12 text-[var(--muted)] text-sm">
+            Invalid conversation
+          </p>
+      </AppPageContainer>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <AppNavbar />
-      <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col px-4 py-4">
-        <div className="flex items-center gap-3 mb-4">
+    <AppPageContainer maxWidthClass="max-w-2xl">
+        <div className="flex flex-col min-h-[70vh]">
+        <div className="flex items-center gap-3 mb-3">
           <Link
             href="/messages"
-            className="text-sm text-blue-600 hover:underline min-h-[44px] flex items-center"
+            className="text-sm text-[var(--brand)] font-medium hover:underline min-h-[44px] flex items-center"
           >
             ← Inbox
           </Link>
         </div>
-        <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-200">
+        <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[var(--border)]">
           <Avatar
             text={otherName.slice(0, 2).toUpperCase() || "?"}
             size="md"
@@ -122,9 +122,9 @@ export default function MessageThreadPage() {
         </div>
 
         {loading ? (
-          <p className="text-gray-500">Loading messages…</p>
+          <p className="text-[var(--muted)] text-sm">Loading messages…</p>
         ) : error ? (
-          <p className="text-red-600">{error}</p>
+          <p className="text-red-600 text-sm">{error}</p>
         ) : (
           <div className="flex-1 overflow-y-auto space-y-3 mb-4 min-h-[200px] max-h-[60vh]">
             {messages.map((m) => {
@@ -135,16 +135,16 @@ export default function MessageThreadPage() {
                   className={`flex ${mine ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm ${
+                    className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
                       mine
-                        ? "bg-blue-600 text-white"
-                        : "bg-white border border-gray-200 text-gray-900"
+                        ? "bg-[var(--brand)] text-white"
+                        : "bg-[var(--surface)] border border-[var(--border)] text-gray-900 shadow-sm"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                    <p className="whitespace-pre-wrap wrap-break-word">{m.body}</p>
                     <p
                       className={`text-[10px] mt-1 ${
-                        mine ? "text-blue-100" : "text-gray-400"
+                        mine ? "text-white/80" : "text-gray-400"
                       }`}
                     >
                       {new Date(m.createdAt).toLocaleString()}
@@ -157,7 +157,7 @@ export default function MessageThreadPage() {
           </div>
         )}
 
-        <form onSubmit={send} className="mt-auto pt-2 border-t border-gray-200">
+        <form onSubmit={send} className="mt-auto pt-3 border-t border-[var(--border)]">
           <div className="flex gap-2">
             <input
               type="text"
@@ -165,18 +165,18 @@ export default function MessageThreadPage() {
               onChange={(e) => setBody(e.target.value)}
               placeholder="Type a message…"
               disabled={sending || currentUserId == null}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-900 min-h-[48px]"
+              className="flex-1 px-4 py-3 border border-[var(--border)] rounded-xl text-gray-900 min-h-[48px] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30"
             />
             <button
               type="submit"
               disabled={!body.trim() || sending || currentUserId == null}
-              className="px-5 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 min-h-[48px] min-w-[88px]"
+              className="px-5 py-3 bg-[var(--brand)] text-white font-semibold rounded-xl hover:bg-[var(--brand-hover)] disabled:opacity-50 min-h-[48px] min-w-[88px]"
             >
               {sending ? "…" : "Send"}
             </button>
           </div>
         </form>
-      </div>
-    </div>
+        </div>
+    </AppPageContainer>
   );
 }

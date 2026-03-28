@@ -1,16 +1,31 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import "./globals.css";
+import MobileTabBar from "./_components/MobileTabBar";
+import AppNavbar from "./_components/AppNavbar";
+import { getServerMe } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "ScottyLinked",
   description: "CMU Professional Network",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const me = await getServerMe();
+  const initialNavUser = me.appUser
+    ? {
+        id: me.appUser.id,
+        handle: me.appUser.handle,
+        fullName: me.appUser.fullName,
+        photoURL: me.appUser.photoURL,
+        isModerator: me.appUser.isModerator,
+      }
+    : null;
+
   return (
     <html lang="en">
       <head>
@@ -21,8 +36,12 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased">
+      <body className="antialiased min-h-screen bg-[var(--page)] text-[var(--foreground)]">
+        <AppNavbar initialAppUser={initialNavUser} />
         {children}
+        <Suspense fallback={null}>
+          <MobileTabBar />
+        </Suspense>
       </body>
     </html>
   );

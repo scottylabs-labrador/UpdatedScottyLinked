@@ -1,23 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
-import {
-  getHandleFromEmail,
-  isAndrewEmail,
-  getAppUserByHandle,
-} from "@/lib/auth/db";
+import { getCurrentAppUserId } from "@/lib/api/currentUser";
 import { createProjectAdmin } from "@/lib/db/projects";
+import { isGroupModerator } from "@/lib/db/groups";
 import { NextResponse } from "next/server";
-
-async function getCurrentAppUserId(): Promise<number | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email || !isAndrewEmail(user.email)) return null;
-  const handle = getHandleFromEmail(user.email);
-  if (!handle) return null;
-  const appUser = await getAppUserByHandle(handle);
-  return appUser?.id ?? null;
-}
 
 /** POST: create a project / teammate listing. */
 export async function POST(request: Request) {
@@ -32,11 +16,33 @@ export async function POST(request: Request) {
     skills?: string[];
     level?: string;
     type?: string;
+    groupId?: number;
   };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const groupId =
+    typeof body.groupId === "number" && Number.isFinite(body.groupId)
+      ? body.groupId
+      : typeof body.groupId === "string"
+        ? parseInt(body.groupId, 10)
+        : NaN;
+  if (isNaN(groupId)) {
+    return NextResponse.json(
+      { error: "groupId required — listings are group-scoped only" },
+      { status: 400 }
+    );
+  }
+
+  const canPost = await isGroupModerator(groupId, authorId);
+  if (!canPost) {
+    return NextResponse.json(
+      { error: "Only group moderators can post listings" },
+      { status: 403 }
+    );
   }
 
   const title = typeof body.title === "string" ? body.title.trim() : "";
@@ -60,6 +66,7 @@ export async function POST(request: Request) {
     level: typeof body.level === "string" ? body.level : undefined,
     type: typeof body.type === "string" ? body.type : undefined,
     authorId,
+    groupId,
   });
 
   if (!project) {

@@ -40,7 +40,7 @@ export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
           
           <nav className="flex gap-1">
             <NavButton label="Feed" tab="feed" />
-            <NavButton label="Opportunities" tab="opportunities" />
+            <NavButton label="Groups" tab="groups" />
             <NavButton label="Network" tab="network" />
             <NavButton label="Profile" tab="profile" />
           </nav>

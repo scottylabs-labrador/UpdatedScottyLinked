@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import AppNavbar from "@/app/_components/AppNavbar";
 import Avatar from "@/app/_components/Avatar";
+import { AppPageContainer } from "@/app/_components/AppShell";
 
 type Preview = {
   conversationId: number;
@@ -36,21 +36,21 @@ export default function MessagesInboxPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppNavbar />
-      <div className="max-w-2xl mx-auto py-8 px-4">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Messages</h1>
+    <AppPageContainer maxWidthClass="max-w-2xl">
+        <h1 className="text-xl font-bold text-gray-900 mb-4 tracking-tight">
+          Messages
+        </h1>
         {unauth ? (
-          <p className="text-gray-600">Sign in to view messages.</p>
+          <p className="text-[var(--muted)] text-sm">Sign in to view messages.</p>
         ) : loading ? (
-          <p className="text-gray-500">Loading…</p>
+          <p className="text-[var(--muted)] text-sm">Loading…</p>
         ) : items.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-600">
+          <div className="card-surface p-10 text-center text-[var(--muted)] text-sm shadow-sm">
             No conversations yet. Open someone&apos;s profile and tap Message to
             start.
           </div>
         ) : (
-          <ul className="divide-y divide-gray-200 bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <ul className="divide-y divide-[var(--border)] card-surface overflow-hidden shadow-sm">
             {items.map((c) => (
               <li key={c.conversationId}>
                 <Link
@@ -82,7 +82,6 @@ export default function MessagesInboxPage() {
             ))}
           </ul>
         )}
-      </div>
-    </div>
+    </AppPageContainer>
   );
 }

@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import Avatar from "@/app/_components/Avatar";
-import AppNavbar from "@/app/_components/AppNavbar";
 import ReportModal from "@/app/_components/ReportModal";
+import { AppPageContainer } from "@/app/_components/AppShell";
+import ProfileHeader from "@/app/_components/ProfileHeader";
 import { UserProfile } from "@/lib/types";
 
 type ConnectionStatus =
@@ -163,177 +163,216 @@ export default function PublicProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Loading profile...</p>
-      </div>
+      <AppPageContainer>
+        <p className="text-center py-16 text-[var(--muted)] text-sm">
+          Loading profile…
+        </p>
+      </AppPageContainer>
     );
   }
 
   if (error || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
-        <p className="text-gray-600">{error ?? "User not found"}</p>
-        <Link href="/" className="text-blue-600 hover:underline">
-          Back to home
-        </Link>
-      </div>
+      <AppPageContainer>
+        <div className="card-surface p-8 text-center shadow-sm space-y-3">
+          <p className="text-gray-700">{error ?? "User not found"}</p>
+          <Link
+            href="/"
+            className="text-[var(--brand)] font-medium hover:underline"
+          >
+            Back to home
+          </Link>
+        </div>
+      </AppPageContainer>
     );
   }
 
+  const isOwn = currentUserId != null && currentUserId === profileId;
+
+  const connectionSlot =
+    !isOwn && connectionState ? (
+      <div className="flex flex-wrap gap-2">
+        {connectionState.status === "none" && (
+          <button
+            type="button"
+            onClick={sendRequest}
+            disabled={connectionBusy}
+            className="px-4 py-2 min-h-[40px] bg-[var(--brand)] text-white text-sm font-semibold rounded-lg hover:bg-[var(--brand-hover)] disabled:opacity-50"
+          >
+            {connectionBusy ? "Connecting..." : "Connect"}
+          </button>
+        )}
+        {connectionState.status === "pending_sent" && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">Pending request</span>
+            <button
+              type="button"
+              onClick={cancelRequest}
+              disabled={connectionBusy}
+              className="px-4 py-2 text-gray-700 bg-gray-200 text-sm font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50"
+            >
+              Cancel request
+            </button>
+          </div>
+        )}
+        {connectionState.status === "pending_received" && (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={acceptRequest}
+              disabled={connectionBusy}
+              className="px-4 py-2 min-h-[40px] bg-[var(--brand)] text-white text-sm font-semibold rounded-lg hover:bg-[var(--brand-hover)] disabled:opacity-50"
+            >
+              Accept
+            </button>
+            <button
+              type="button"
+              onClick={rejectRequest}
+              disabled={connectionBusy}
+              className="px-4 py-2 text-gray-700 bg-gray-200 text-sm font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50"
+            >
+              Reject
+            </button>
+          </div>
+        )}
+        {connectionState.status === "connected" && (
+          <span className="text-sm text-gray-500 font-medium">Connected</span>
+        )}
+      </div>
+    ) : null;
+
+  const otherActions =
+    !isOwn && currentUserId != null ? (
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={startMessage}
+          disabled={actionBusy}
+          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 min-h-[40px]"
+        >
+          Message
+        </button>
+        <button
+          type="button"
+          onClick={() => setReportOpen(true)}
+          className="px-3 py-1.5 text-sm text-red-700 border border-red-200 rounded-lg hover:bg-red-50 min-h-[40px]"
+        >
+          Report
+        </button>
+        <button
+          type="button"
+          onClick={blockUser}
+          disabled={actionBusy}
+          className="px-3 py-1.5 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 min-h-[40px]"
+        >
+          Block
+        </button>
+      </div>
+    ) : null;
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       <ReportModal
         open={reportOpen}
         onClose={() => setReportOpen(false)}
         targetType="user"
         targetId={profileId}
       />
-      <AppNavbar />
-      <div className="max-w-3xl mx-auto py-8 px-4">
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="h-32 bg-gradient-to-r from-blue-600 to-blue-700" />
-          <div className="px-6 pb-6">
-            <div className="flex items-end gap-4 -mt-12 mb-6">
-              <Avatar
-                text={user.avatar}
-                size="lg"
-                imageUrl={user.photoURL}
-              />
-              <div className="flex-1 pt-14 flex flex-wrap items-center gap-3">
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{user.name}</h1>
-                  <p className="text-gray-600">
-                    {user.major} • {user.year}
-                  </p>
-                </div>
-                {connectionState && (
-                  <div className="flex gap-2 ml-auto">
-                    {connectionState.status === "none" && (
-                      <button
-                        type="button"
-                        onClick={sendRequest}
-                        disabled={connectionBusy}
-                        className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                      >
-                        {connectionBusy ? "Connecting..." : "Connect"}
-                      </button>
-                    )}
-                    {connectionState.status === "pending_sent" && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">Pending request</span>
-                        <button
-                          type="button"
-                          onClick={cancelRequest}
-                          disabled={connectionBusy}
-                          className="px-4 py-2 text-gray-700 bg-gray-200 text-sm font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50"
-                        >
-                          Cancel request
-                        </button>
-                      </div>
-                    )}
-                    {connectionState.status === "pending_received" && (
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={acceptRequest}
-                          disabled={connectionBusy}
-                          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          type="button"
-                          onClick={rejectRequest}
-                          disabled={connectionBusy}
-                          className="px-4 py-2 text-gray-700 bg-gray-200 text-sm font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                    {connectionState.status === "connected" && (
-                      <span className="text-sm text-gray-500 font-medium">Connected</span>
-                    )}
-                  </div>
+      <AppPageContainer>
+        <div className="space-y-6">
+          <ProfileHeader
+            user={user}
+            actionSlot={
+              <div className="flex flex-col items-stretch sm:items-end gap-2">
+                {isOwn && (
+                  <Link
+                    href="/?tab=profile"
+                    className="px-4 py-2 min-h-[40px] border-2 border-[var(--brand)] text-[var(--brand)] rounded-lg hover:bg-blue-50/80 transition font-semibold text-sm text-center"
+                  >
+                    Edit profile
+                  </Link>
                 )}
-                {currentUserId != null && currentUserId !== profileId && (
-                  <div className="w-full flex flex-wrap gap-2 mt-2">
-                    <button
-                      type="button"
-                      onClick={startMessage}
-                      disabled={actionBusy}
-                      className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                      Message
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setReportOpen(true)}
-                      className="px-3 py-1.5 text-sm text-red-700 border border-red-200 rounded-lg hover:bg-red-50"
-                    >
-                      Report
-                    </button>
-                    <button
-                      type="button"
-                      onClick={blockUser}
-                      disabled={actionBusy}
-                      className="px-3 py-1.5 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100"
-                    >
-                      Block
-                    </button>
-                  </div>
-                )}
+                {connectionSlot}
+                {otherActions}
               </div>
+            }
+          />
+
+          <div className="card-surface p-5 sm:p-6 shadow-sm space-y-6">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+                Contact
+              </h3>
+              <p className="text-gray-800">{user.email}</p>
             </div>
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
-                  Contact
-                </h3>
-                <p className="text-gray-800">{user.email}</p>
-              </div>
+
+            {user.bio?.trim() ? (
               <div>
                 <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
                   About
                 </h3>
-                <p className="text-gray-800">{user.bio || "No bio yet."}</p>
+                <p className="text-gray-800 whitespace-pre-wrap">{user.bio}</p>
               </div>
+            ) : (
+              <p className="text-sm text-[var(--muted)]">No bio yet.</p>
+            )}
+
+            {(user.campusRoles?.length ?? 0) > 0 && (
               <div>
                 <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
-                  Academic Info
+                  Campus roles
                 </h3>
-                <div className="flex gap-6">
-                  <div>
-                    <p className="text-sm text-gray-600">Year</p>
-                    <p className="font-semibold text-gray-900">{user.year}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Connections</p>
-                    <p className="font-semibold text-gray-900">{user.connections}</p>
-                  </div>
+                <div className="flex flex-wrap gap-2">
+                  {user.campusRoles.map((r, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2.5 py-1 bg-slate-100 text-slate-800 rounded-md text-sm"
+                    >
+                      {r}
+                    </span>
+                  ))}
                 </div>
               </div>
-              {user.skills && user.skills.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
-                    Skills
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {user.skills.map((skill: string, idx: number) => (
-                      <span
-                        key={idx}
-                        className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
+            )}
+
+            {(user.organizations?.length ?? 0) > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+                  Organizations
+                </h3>
+                <ul className="space-y-2">
+                  {user.organizations.map((o, idx) => (
+                    <li key={idx} className="text-gray-800">
+                      <span className="font-medium">{o.name}</span>
+                      {o.role ? (
+                        <span className="text-[var(--muted)]"> — {o.role}</span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {user.skills && user.skills.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
+                  Skills
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {user.skills.map((skill: string, idx: number) => (
+                    <span
+                      key={idx}
+                      className="px-3 py-1.5 bg-slate-100 text-slate-800 rounded-md text-sm font-medium"
+                    >
+                      {skill}
+                    </span>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
-    </div>
+      </AppPageContainer>
+    </>
   );
 }

@@ -6,6 +6,8 @@ import {
   updateAppUser,
 } from "@/lib/auth/db";
 import { isModeratorUser } from "@/lib/moderation";
+import { parseProfilePatchBody } from "@/lib/profileValidation";
+import { userToUserProfile } from "@/lib/db/users";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -15,27 +17,28 @@ export async function GET() {
   } = await supabase.auth.getUser();
 
   if (!user?.email) {
-    return NextResponse.json({ user: null, appUser: null }, { status: 200 });
+    return NextResponse.json({ user: null, appUser: null, profile: null }, { status: 200 });
   }
 
   if (!isAndrewEmail(user.email)) {
-    return NextResponse.json({ user: null, appUser: null }, { status: 200 });
+    return NextResponse.json({ user: null, appUser: null, profile: null }, { status: 200 });
   }
 
   const handle = getHandleFromEmail(user.email);
   if (!handle) {
-    return NextResponse.json({ user: null, appUser: null }, { status: 200 });
+    return NextResponse.json({ user: null, appUser: null, profile: null }, { status: 200 });
   }
 
   const appUser = await getAppUserByHandle(handle);
   if (!appUser) {
     return NextResponse.json(
-      { user: { email: user.email }, appUser: null },
+      { user: { email: user.email }, appUser: null, profile: null },
       { status: 200 }
     );
   }
 
   const mod = await isModeratorUser(appUser.id);
+  const profile = userToUserProfile(appUser, 0);
 
   return NextResponse.json({
     user: { email: user.email },
@@ -44,9 +47,11 @@ export async function GET() {
       handle: appUser.handle,
       fullName: appUser.fullName,
       photoURL: appUser.photoURL,
+      bannerURL: appUser.bannerURL,
       isModerator: mod,
       skills: appUser.skills ?? [],
     },
+    profile,
   });
 }
 
@@ -77,34 +82,42 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const updates: {
-    fullName?: string;
-    major?: string | null;
-    year?: string | null;
-    bio?: string | null;
-    photoURL?: string | null;
-    skills?: string[];
-  } = {};
-  if (typeof body.fullName === "string") updates.fullName = body.fullName;
-  if (body.major !== undefined) updates.major = body.major === null ? null : String(body.major);
-  if (body.year !== undefined) updates.year = body.year === null ? null : String(body.year);
-  if (body.bio !== undefined) updates.bio = body.bio === null ? null : String(body.bio);
-  if (body.photoURL !== undefined) updates.photoURL = body.photoURL === null ? null : String(body.photoURL);
-  if (Array.isArray(body.skills)) {
-    updates.skills = body.skills
-      .filter((s: unknown): s is string => typeof s === "string")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .slice(0, 24)
-      .map((s) => s.slice(0, 48));
+  let updates;
+  try {
+    updates = parseProfilePatchBody(body);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Invalid payload";
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 
-  const updated = await updateAppUser(appUser.id, updates);
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+  }
+
+  const updated = await updateAppUser(appUser.id, {
+    fullName: updates.fullName,
+    major: updates.major,
+    minors: updates.minors,
+    degree: updates.degree,
+    college: updates.college,
+    year: updates.year,
+    bio: updates.bio,
+    photoURL: updates.photoURL,
+    bannerURL: updates.bannerURL,
+    skills: updates.skills,
+    linkedinUrl: updates.linkedinUrl,
+    githubUrl: updates.githubUrl,
+    portfolioUrl: updates.portfolioUrl,
+    resumeUrl: updates.resumeUrl,
+    campusRoles: updates.campusRoles,
+    organizations: updates.organizations,
+  });
   if (!updated) {
     return NextResponse.json({ error: "Update failed" }, { status: 500 });
   }
 
   const mod = await isModeratorUser(updated.id);
+  const profile = userToUserProfile(updated, 0);
 
   return NextResponse.json({
     appUser: {
@@ -112,8 +125,10 @@ export async function PATCH(request: Request) {
       handle: updated.handle,
       fullName: updated.fullName,
       photoURL: updated.photoURL,
+      bannerURL: updated.bannerURL,
       isModerator: mod,
       skills: updated.skills ?? [],
     },
+    profile,
   });
 }

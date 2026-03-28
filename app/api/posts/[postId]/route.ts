@@ -1,18 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
-import { getHandleFromEmail, isAndrewEmail, getAppUserByHandle } from "@/lib/auth/db";
+import { getCurrentAppUserId } from "@/lib/api/currentUser";
 import { getConnectedUserIdsAdmin } from "@/lib/db/connections";
 import { getPostById } from "@/lib/db/posts";
 import { NextResponse } from "next/server";
-
-async function getCurrentAppUserId(): Promise<number | null> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user?.email || !isAndrewEmail(user.email)) return null;
-  const handle = getHandleFromEmail(user.email);
-  if (!handle) return null;
-  const appUser = await getAppUserByHandle(handle);
-  return appUser?.id ?? null;
-}
 
 /** GET: fetch a single post by ID (FeedPost shape). Optional auth for liked state. */
 export async function GET(

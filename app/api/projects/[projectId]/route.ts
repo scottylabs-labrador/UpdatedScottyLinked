@@ -1,24 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
-import {
-  getHandleFromEmail,
-  isAndrewEmail,
-  getAppUserByHandle,
-} from "@/lib/auth/db";
+import { getCurrentAppUserId } from "@/lib/api/currentUser";
 import { getProjectByIdFull } from "@/lib/db/projects";
 import { getPendingInterestsForProject } from "@/lib/db/projectInterests";
+import { isGroupMember } from "@/lib/db/groups";
 import { NextResponse } from "next/server";
-
-async function getCurrentAppUserId(): Promise<number | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email || !isAndrewEmail(user.email)) return null;
-  const handle = getHandleFromEmail(user.email);
-  if (!handle) return null;
-  const appUser = await getAppUserByHandle(handle);
-  return appUser?.id ?? null;
-}
 
 /** GET: project detail; includes pending interests when requester is owner */
 export async function GET(
@@ -31,12 +15,22 @@ export async function GET(
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
 
-  const project = await getProjectByIdFull(id);
+  const [project, viewerId] = await Promise.all([
+    getProjectByIdFull(id),
+    getCurrentAppUserId(),
+  ]);
   if (!project) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  const gid = project.groupId;
+  if (gid != null && gid > 0) {
+    if (viewerId == null || !(await isGroupMember(gid, viewerId))) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+  } else {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
-  const viewerId = await getCurrentAppUserId();
   const isOwner = viewerId != null && viewerId === project.authorID;
 
   const out: Record<string, unknown> = { project };
