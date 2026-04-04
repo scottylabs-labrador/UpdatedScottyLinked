@@ -154,7 +154,7 @@ export type NetworkSearchFilters = {
 export async function searchUsersForNetwork(
   filters: NetworkSearchFilters,
   excludeUserId?: number,
-  limit: number = 40
+  maxFetch: number = 200
 ): Promise<User[]> {
   if (!supabaseAdmin) return [];
 
@@ -181,11 +181,10 @@ export async function searchUsersForNetwork(
     query = query.neq("id", excludeUserId);
   }
 
-  const fetchLimit = filters.skill?.trim() ? Math.min(limit * 4, 200) : limit;
-
+  const fetchCap = Math.min(Math.max(maxFetch, 1), 220);
   const { data, error } = await query
     .order("handle", { ascending: true })
-    .limit(fetchLimit);
+    .limit(fetchCap);
 
   if (error) {
     console.error("Error searching users (admin):", error);
@@ -204,7 +203,18 @@ export async function searchUsersForNetwork(
     );
   }
 
-  return users.slice(0, limit);
+  return users;
+}
+
+/** Slice a pre-fetched search list for infinite scroll (offset/limit). */
+export function sliceUsersForNetworkPage(
+  users: User[],
+  offset: number,
+  limit: number
+): { page: User[]; hasMore: boolean } {
+  const slice = users.slice(offset, offset + limit + 1);
+  const hasMore = slice.length > limit;
+  return { page: slice.slice(0, limit), hasMore };
 }
 
 /**
@@ -350,61 +360,89 @@ export async function createUser(user: Omit<User, "id">): Promise<User | null> {
   return rowToUser(data as Record<string, unknown> | null);
 }
 
+function usersToNetworkProfiles(userList: User[]): Profile[] {
+  const getAvatarInitials = (name: string | null): string => {
+    if (!name) return "?";
+    const parts = name.split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  return userList.map((user) => ({
+    id: user.id,
+    name: user.fullName,
+    avatar: getAvatarInitials(user.fullName),
+    photoURL: user.photoURL ?? null,
+    major: user.major || "Undeclared",
+    year: user.year || "Unknown",
+    skills: user.skills ?? [],
+    bio: user.bio || "",
+    connections: 0,
+  }));
+}
+
+export type ProfilesPage = {
+  profiles: Profile[];
+  nextOffset: number;
+  hasMore: boolean;
+};
+
 /**
- * Get all users as Profile format for network view
+ * Paginated profiles for Network (newest first), excluding current user.
  */
-export async function getProfiles(
-  currentUserId: number = 1,
-  limit: number = 50
-): Promise<Profile[]> {
+export async function getProfilesPaginated(
+  currentUserId: number,
+  pageSize: number,
+  offset: number
+): Promise<ProfilesPage> {
   try {
+    const size = Math.max(1, Math.min(pageSize, 50));
+    const start = Math.max(0, offset);
     const { data: users, error } = await supabase
       .from("users")
       .select("*")
       .neq("id", currentUserId)
-      .limit(limit)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(start, start + size);
 
     if (error) {
       console.error("Error fetching profiles:", error);
-      return [];
+      return { profiles: [], nextOffset: start, hasMore: false };
     }
 
-    if (!users) return [];
+    if (!users?.length) {
+      return { profiles: [], nextOffset: start, hasMore: false };
+    }
 
     const userList = (users as Record<string, unknown>[])
       .map((row) => rowToUser(row))
       .filter((u): u is User => u != null);
 
-    const profiles: Profile[] = userList.map((user) => {
-      const connectionCount = 0;
-      const getAvatarInitials = (name: string | null): string => {
-        if (!name) return "?";
-        const parts = name.split(" ");
-        if (parts.length >= 2) {
-          return (parts[0][0] + parts[1][0]).toUpperCase();
-        }
-        return name.substring(0, 2).toUpperCase();
-      };
-
-      return {
-        id: user.id,
-        name: user.fullName,
-        avatar: getAvatarInitials(user.fullName),
-        photoURL: user.photoURL ?? null,
-        major: user.major || "Undeclared",
-        year: user.year || "Unknown",
-        skills: user.skills ?? [],
-        bio: user.bio || "",
-        connections: connectionCount,
-      };
-    });
-
-    return profiles;
+    const hasMore = userList.length > size;
+    const slice = hasMore ? userList.slice(0, size) : userList;
+    return {
+      profiles: usersToNetworkProfiles(slice),
+      nextOffset: start + slice.length,
+      hasMore,
+    };
   } catch (error) {
-    console.error("Error in getProfiles:", error);
-    return [];
+    console.error("Error in getProfilesPaginated:", error);
+    return { profiles: [], nextOffset: offset, hasMore: false };
   }
+}
+
+/**
+ * Get users as Profile format for network view (first page only; use getProfilesPaginated for scroll).
+ */
+export async function getProfiles(
+  currentUserId: number = 1,
+  limit: number = 50
+): Promise<Profile[]> {
+  const { profiles } = await getProfilesPaginated(currentUserId, limit, 0);
+  return profiles;
 }
 
 /** Map a User row to Network `Profile` card shape. */

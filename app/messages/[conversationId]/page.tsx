@@ -47,9 +47,16 @@ export default function MessageThreadPage() {
   const [body, setBody] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
   const scrollPreserve = useRef<{ prevHeight: number; prevTop: number } | null>(
     null
   );
+  const prevThreadMeta = useRef<{ len: number; firstRealId: number | null }>({
+    len: 0,
+    firstRealId: null,
+  });
+  /** Avoid auto-loading older messages before initial scroll-to-bottom runs. */
+  const allowOlderScrollLoad = useRef(false);
 
   const loadRecent = useCallback(async () => {
     if (isNaN(id)) return;
@@ -142,6 +149,7 @@ export default function MessageThreadPage() {
   }, []);
 
   useEffect(() => {
+    prevThreadMeta.current = { len: 0, firstRealId: null };
     void loadRecent();
   }, [loadRecent]);
 
@@ -188,8 +196,45 @@ export default function MessageThreadPage() {
   }, [id]);
 
   useEffect(() => {
+    if (listLoading) return;
+    const firstReal = messages.find((m) => m.id > 0);
+    const firstId = firstReal?.id ?? null;
+    const prev = prevThreadMeta.current;
+    const grew = messages.length > prev.len;
+    const prepended =
+      grew &&
+      firstId != null &&
+      prev.firstRealId != null &&
+      firstId !== prev.firstRealId;
+    prevThreadMeta.current = { len: messages.length, firstRealId: firstId };
+    if (!grew || prepended) return;
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, listLoading]);
+
+  useEffect(() => {
+    allowOlderScrollLoad.current = false;
+    if (listLoading) return;
+    const t = window.setTimeout(() => {
+      allowOlderScrollLoad.current = true;
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [listLoading, id]);
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    const el = topSentinelRef.current;
+    if (!root || !el || !hasOlder || listLoading) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        if (!allowOlderScrollLoad.current) return;
+        void loadOlder();
+      },
+      { root, rootMargin: "48px", threshold: 0 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasOlder, listLoading, loadOlder]);
 
   const send = (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,15 +337,16 @@ export default function MessageThreadPage() {
             className="flex-1 overflow-y-auto space-y-3 mb-4 min-h-[200px] max-h-[60vh]"
           >
             {hasOlder && !listLoading && (
-              <div className="flex justify-center pt-1">
-                <button
-                  type="button"
-                  onClick={() => void loadOlder()}
-                  disabled={loadingOlder}
-                  className="text-xs font-medium text-[var(--brand)] hover:underline disabled:opacity-50"
-                >
-                  {loadingOlder ? "Loading older…" : "Load older messages"}
-                </button>
+              <div
+                ref={topSentinelRef}
+                className="min-h-[1px] flex justify-center py-2"
+                aria-hidden
+              >
+                {loadingOlder && (
+                  <span className="text-xs text-[var(--muted)]">
+                    Loading older…
+                  </span>
+                )}
               </div>
             )}
 

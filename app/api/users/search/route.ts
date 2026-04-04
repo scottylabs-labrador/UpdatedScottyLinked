@@ -4,7 +4,11 @@ import {
   isAndrewEmail,
   getAppUserByHandle,
 } from "@/lib/auth/db";
-import { searchUsersForNetwork, userToNetworkProfile } from "@/lib/db/users";
+import {
+  searchUsersForNetwork,
+  sliceUsersForNetworkPage,
+  userToNetworkProfile,
+} from "@/lib/db/users";
 import { NextResponse } from "next/server";
 
 async function getCurrentAppUserId(): Promise<number | null> {
@@ -33,8 +37,14 @@ export async function GET(request: Request) {
   const skill = searchParams.get("skill")?.trim() ?? "";
 
   if (!q && !major && !year && !skill) {
-    return NextResponse.json({ profiles: [] });
+    return NextResponse.json({ profiles: [], hasMore: false });
   }
+
+  const offset = Math.max(0, parseInt(searchParams.get("offset") ?? "0", 10) || 0);
+  const limit = Math.max(
+    1,
+    Math.min(parseInt(searchParams.get("limit") ?? "16", 10) || 16, 40)
+  );
 
   const users = await searchUsersForNetwork(
     {
@@ -44,9 +54,10 @@ export async function GET(request: Request) {
       skill: skill || undefined,
     },
     appUserId,
-    40
+    200
   );
 
-  const profiles = users.map(userToNetworkProfile);
-  return NextResponse.json({ profiles });
+  const { page, hasMore } = sliceUsersForNetworkPage(users, offset, limit);
+  const profiles = page.map(userToNetworkProfile);
+  return NextResponse.json({ profiles, hasMore });
 }

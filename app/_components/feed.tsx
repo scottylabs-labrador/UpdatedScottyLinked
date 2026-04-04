@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Heart,
@@ -23,6 +23,9 @@ interface FeedProps {
   currentUserId?: number | null;
   /** From server bootstrap / home refresh (no client fetch). */
   myGroups: { id: number; name: string }[];
+  hasMoreFeed?: boolean;
+  loadingMoreFeed?: boolean;
+  onLoadMoreFeed?: () => void | Promise<void>;
 }
 
 type LikeUpdate = { likes: number; liked: boolean };
@@ -33,7 +36,11 @@ export default function Feed({
   onPostCreated,
   currentUserId = 1,
   myGroups,
+  hasMoreFeed = false,
+  loadingMoreFeed = false,
+  onLoadMoreFeed,
 }: FeedProps) {
+  const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
   const [postTitle, setPostTitle] = useState("");
   const [postContent, setPostContent] = useState("");
   const [postTags, setPostTags] = useState("");
@@ -108,6 +115,21 @@ export default function Feed({
       return next;
     });
   }, [myGroups]);
+
+  useEffect(() => {
+    const el = loadMoreSentinelRef.current;
+    if (!el || !hasMoreFeed || loadingMoreFeed || !onLoadMoreFeed) return;
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const hit = entries.some((e) => e.isIntersecting);
+        if (hit) void onLoadMoreFeed();
+      },
+      { root: null, rootMargin: "240px", threshold: 0 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasMoreFeed, loadingMoreFeed, onLoadMoreFeed, posts.length]);
 
   const getPostLikeState = (post: FeedPost) => {
     const u = likeUpdates[post.id];
@@ -640,6 +662,15 @@ export default function Feed({
               </article>
             );
           })}
+          {hasMoreFeed && (
+            <div
+              ref={loadMoreSentinelRef}
+              className="h-8 flex items-center justify-center text-xs text-[var(--muted)]"
+              aria-hidden
+            >
+              {loadingMoreFeed ? "Loading more…" : ""}
+            </div>
+          )}
         </div>
       )}
     </div>

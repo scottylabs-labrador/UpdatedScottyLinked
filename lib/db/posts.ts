@@ -317,6 +317,227 @@ export async function createPost(
   }
 }
 
+type NormalizedPost = ReturnType<typeof postRow>;
+
+export type FeedCursor = { createdAt: string; id: number };
+
+/** Next page in feed order: strictly older than cursor (created_at desc, id desc tie-break). */
+function isStrictlyOlderPost(
+  post: NormalizedPost,
+  cursor: FeedCursor
+): boolean {
+  if (post.created_at < cursor.createdAt) return true;
+  if (post.created_at > cursor.createdAt) return false;
+  return post.id < cursor.id;
+}
+
+async function hydratePostsToFeedPosts(
+  posts: NormalizedPost[],
+  userId: number | null,
+  connectedSet: Set<number>,
+  visMap: Map<number, PostVisibilityRule[]>,
+  groupNames: Map<number, string>
+): Promise<FeedPost[]> {
+  if (posts.length === 0) return [];
+
+  const authorIds = [...new Set(posts.map((p) => p.authorID))];
+  const authors = await getUsersByIds(authorIds);
+
+  const ids = posts.map((p) => p.id);
+  const { data: commentsData } = await supabase
+    .from("postcomments")
+    .select("postid")
+    .in("postid", ids);
+
+  const commentCounts = new Map<number, number>();
+  if (commentsData) {
+    (commentsData as Record<string, unknown>[]).forEach((comment) => {
+      const postId = (comment.postid as number) ?? (comment.postID as number);
+      commentCounts.set(postId, (commentCounts.get(postId) || 0) + 1);
+    });
+  }
+
+  const likeCounts = new Map<number, number>();
+  const likedPostIds = new Set<number>();
+  try {
+    const { data: likesData } = await supabase
+      .from("postlikes")
+      .select("postid, userid")
+      .in("postid", ids);
+    if (likesData) {
+      (likesData as Record<string, unknown>[]).forEach((row) => {
+        const postId = (row.postid as number) ?? (row.postID as number);
+        likeCounts.set(postId, (likeCounts.get(postId) || 0) + 1);
+        if (userId != null && (row.userid as number) === userId) {
+          likedPostIds.add(postId);
+        }
+      });
+    }
+  } catch {
+    /* no postlikes */
+  }
+
+  return posts.map((post) => {
+    const author = authors.find((user) => user.id === post.authorID);
+    const rules = visMap.get(post.id) ?? [];
+    const meta =
+      rules.length > 0
+        ? buildVisibilityFeedMeta(rules, groupNames)
+        : {
+            summary:
+              post.audience === "public"
+                ? "Everyone"
+                : post.audience === "connections"
+                  ? "Connections"
+                  : post.audience === "private"
+                    ? "Only you"
+                    : post.groupId != null
+                      ? groupNames.get(post.groupId) ?? `Group ${post.groupId}`
+                      : "Everyone",
+            groupIds: post.groupId != null ? [post.groupId] : [],
+          };
+    return {
+      id: post.id,
+      author: author?.fullName || "Unknown",
+      authorId: author?.id,
+      authorPhotoURL: author?.photoURL ?? null,
+      major: formatMajor(author?.major || null, author?.year || null),
+      avatar: getAvatarInitials(author?.fullName || null),
+      timestamp: formatTimestamp(post.created_at),
+      title: post.title,
+      content: post.content,
+      tags: post.tags || [],
+      audience: post.audience,
+      groupId: post.groupId,
+      visibilitySummary: meta.summary,
+      visibilityGroupIds: meta.groupIds,
+      likes: likeCounts.get(post.id) || 0,
+      comments: commentCounts.get(post.id) || 0,
+      liked: userId != null ? likedPostIds.has(post.id) : undefined,
+    };
+  });
+}
+
+/**
+ * Paginated feed: scans posts in created_at desc order until `pageSize` visible posts
+ * (or DB exhausted). Pass `cursor` from the previous response's `nextCursor`.
+ */
+export async function getFeedPostsPaginated(
+  userId: number | null = null,
+  connectedUserIds: number[] = [],
+  pageSize: number = 15,
+  hiddenAuthorIds: number[] = [],
+  cursor: FeedCursor | null = null
+): Promise<{
+  posts: FeedPost[];
+  nextCursor: FeedCursor | null;
+  hasMore: boolean;
+}> {
+  try {
+    const connectedSet = new Set(connectedUserIds);
+    const hiddenSet = new Set(hiddenAuthorIds);
+    const memberGroupSet = new Set(
+      userId != null ? await listGroupIdsForUser(userId) : []
+    );
+
+    const collected: NormalizedPost[] = [];
+    const seenIds = new Set<number>();
+    let dbSkip = 0;
+    const BATCH = 200;
+    const maxScan = 6000;
+
+    while (collected.length < pageSize && dbSkip < maxScan) {
+      const { data: rawPosts, error } = await supabase
+        .from("posts")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(dbSkip, dbSkip + BATCH - 1);
+
+      if (error) {
+        console.error("Error fetching posts:", error);
+        break;
+      }
+
+      const chunk = (rawPosts ?? []).map((p) =>
+        postRow(p as Record<string, unknown>)
+      );
+      dbSkip += BATCH;
+
+      if (chunk.length === 0) break;
+
+      const visMapChunk = await loadVisibilityForPostIds(chunk.map((p) => p.id));
+
+      const visible = chunk.filter((p) => {
+        if (hiddenSet.has(p.authorID)) return false;
+        const rules = visMapChunk.get(p.id) ?? [];
+        if (rules.length > 0) {
+          return viewerSeesVisibility(rules, {
+            viewerId: userId,
+            authorId: p.authorID,
+            connectedToAuthor: connectedSet.has(p.authorID),
+            memberGroupIds: memberGroupSet,
+          });
+        }
+        if (p.groupId != null) {
+          if (userId == null) return false;
+          return memberGroupSet.has(p.groupId);
+        }
+        return canViewerSeePostLegacy(
+          p.audience,
+          p.authorID,
+          userId,
+          connectedSet
+        );
+      });
+
+      for (const p of visible) {
+        if (cursor != null && !isStrictlyOlderPost(p, cursor)) continue;
+        if (seenIds.has(p.id)) continue;
+        seenIds.add(p.id);
+        collected.push(p);
+        if (collected.length >= pageSize) break;
+      }
+
+      if (chunk.length < BATCH) break;
+    }
+
+    if (collected.length === 0) {
+      return { posts: [], nextCursor: null, hasMore: false };
+    }
+
+    const visMap = await loadVisibilityForPostIds(collected.map((p) => p.id));
+    const allGroupIds = new Set<number>();
+    for (const p of collected) {
+      const rules = visMap.get(p.id) ?? [];
+      for (const r of rules) {
+        if (r.scope === "group" && r.groupId != null) allGroupIds.add(r.groupId);
+      }
+    }
+    const groupNames = await getGroupNamesByIds([...allGroupIds]);
+
+    const posts = await hydratePostsToFeedPosts(
+      collected,
+      userId,
+      connectedSet,
+      visMap,
+      groupNames
+    );
+
+    const last = collected[collected.length - 1];
+    const nextCursor: FeedCursor = {
+      createdAt: last.created_at,
+      id: last.id,
+    };
+    const hasMore = collected.length === pageSize;
+
+    return { posts, nextCursor, hasMore };
+  } catch (error) {
+    console.error("Error in getFeedPostsPaginated:", error);
+    return { posts: [], nextCursor: null, hasMore: false };
+  }
+}
+
 /**
  * Get posts for feed: union of everything the viewer may see (including group posts).
  */
@@ -326,145 +547,14 @@ export async function getFeedPosts(
   limit: number = 50,
   hiddenAuthorIds: number[] = []
 ): Promise<FeedPost[]> {
-  try {
-    const connectedSet = new Set(connectedUserIds);
-    const hiddenSet = new Set(hiddenAuthorIds);
-    const memberGroupSet = new Set(
-      userId != null ? await listGroupIdsForUser(userId) : []
-    );
-
-    const { data: rawPosts, error } = await supabase
-      .from("posts")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
-
-    if (error) {
-      console.error("Error fetching posts:", error);
-      return [];
-    }
-
-    const allPosts = (rawPosts ?? []).map((p) =>
-      postRow(p as Record<string, unknown>)
-    );
-    const postIds = allPosts.map((p) => p.id);
-    const visMap = await loadVisibilityForPostIds(postIds);
-
-    const visible = allPosts.filter((p) => {
-      if (hiddenSet.has(p.authorID)) return false;
-      const rules = visMap.get(p.id) ?? [];
-      if (rules.length > 0) {
-        return viewerSeesVisibility(rules, {
-          viewerId: userId,
-          authorId: p.authorID,
-          connectedToAuthor: connectedSet.has(p.authorID),
-          memberGroupIds: memberGroupSet,
-        });
-      }
-      if (p.groupId != null) {
-        if (userId == null) return false;
-        return memberGroupSet.has(p.groupId);
-      }
-      return canViewerSeePostLegacy(
-        p.audience,
-        p.authorID,
-        userId,
-        connectedSet
-      );
-    });
-
-    const posts = visible.slice(0, limit);
-    if (posts.length === 0) return [];
-
-    const allGroupIds = new Set<number>();
-    for (const p of posts) {
-      const rules = visMap.get(p.id) ?? [];
-      for (const r of rules) {
-        if (r.scope === "group" && r.groupId != null) allGroupIds.add(r.groupId);
-      }
-    }
-    const groupNames = await getGroupNamesByIds([...allGroupIds]);
-
-    const authorIds = [...new Set(posts.map((p) => p.authorID))];
-    const authors = await getUsersByIds(authorIds);
-
-    const ids = posts.map((p) => p.id);
-    const { data: commentsData } = await supabase
-      .from("postcomments")
-      .select("postid")
-      .in("postid", ids);
-
-    const commentCounts = new Map<number, number>();
-    if (commentsData) {
-      (commentsData as Record<string, unknown>[]).forEach((comment) => {
-        const postId = (comment.postid as number) ?? (comment.postID as number);
-        commentCounts.set(postId, (commentCounts.get(postId) || 0) + 1);
-      });
-    }
-
-    const likeCounts = new Map<number, number>();
-    const likedPostIds = new Set<number>();
-    try {
-      const { data: likesData } = await supabase
-        .from("postlikes")
-        .select("postid, userid")
-        .in("postid", ids);
-      if (likesData) {
-        (likesData as Record<string, unknown>[]).forEach((row) => {
-          const postId = (row.postid as number) ?? (row.postID as number);
-          likeCounts.set(postId, (likeCounts.get(postId) || 0) + 1);
-          if (userId != null && (row.userid as number) === userId) {
-            likedPostIds.add(postId);
-          }
-        });
-      }
-    } catch {
-      /* no postlikes */
-    }
-
-    return posts.map((post) => {
-      const author = authors.find((user) => user.id === post.authorID);
-      const rules = visMap.get(post.id) ?? [];
-      const meta =
-        rules.length > 0
-          ? buildVisibilityFeedMeta(rules, groupNames)
-          : {
-              summary:
-                post.audience === "public"
-                  ? "Everyone"
-                  : post.audience === "connections"
-                    ? "Connections"
-                    : post.audience === "private"
-                      ? "Only you"
-                      : post.groupId != null
-                        ? groupNames.get(post.groupId) ?? `Group ${post.groupId}`
-                        : "Everyone",
-              groupIds: post.groupId != null ? [post.groupId] : [],
-            };
-      return {
-        id: post.id,
-        author: author?.fullName || "Unknown",
-        authorId: author?.id,
-        authorPhotoURL: author?.photoURL ?? null,
-        major: formatMajor(author?.major || null, author?.year || null),
-        avatar: getAvatarInitials(author?.fullName || null),
-        timestamp: formatTimestamp(post.created_at),
-        title: post.title,
-        content: post.content,
-        tags: post.tags || [],
-        audience: post.audience,
-        groupId: post.groupId,
-        visibilitySummary: meta.summary,
-        visibilityGroupIds: meta.groupIds,
-        likes: likeCounts.get(post.id) || 0,
-        comments: commentCounts.get(post.id) || 0,
-        liked: userId != null ? likedPostIds.has(post.id) : undefined,
-      };
-    });
-  } catch (error) {
-    console.error("Error in getFeedPosts:", error);
-    return [];
-  }
+  const { posts } = await getFeedPostsPaginated(
+    userId,
+    connectedUserIds,
+    limit,
+    hiddenAuthorIds,
+    null
+  );
+  return posts;
 }
 
 /**

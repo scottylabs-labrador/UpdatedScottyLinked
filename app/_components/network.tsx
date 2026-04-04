@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import Avatar from "./Avatar";
 import { Profile } from "@/lib/types";
 import type { PendingSentItem, PendingReceivedItem } from "@/lib/db/connections";
+import { HOME_PROFILES_PAGE_SIZE } from "@/lib/home/pagination";
 
 interface NetworkProps {
   profiles: Profile[];
@@ -12,6 +13,9 @@ interface NetworkProps {
   connectedIds: number[];
   currentUserId?: number | null;
   onConnectionCreated?: () => void;
+  hasMoreProfiles?: boolean;
+  loadingMoreProfiles?: boolean;
+  onLoadMoreProfiles?: () => void | Promise<void>;
 }
 
 export default function Network({
@@ -20,8 +24,13 @@ export default function Network({
   connectedIds = [],
   currentUserId,
   onConnectionCreated,
+  hasMoreProfiles = false,
+  loadingMoreProfiles = false,
+  onLoadMoreProfiles,
 }: NetworkProps) {
   const uid = currentUserId ?? null;
+  const discoverSentinelRef = useRef<HTMLDivElement>(null);
+  const searchSentinelRef = useRef<HTMLDivElement>(null);
   const [connectingUsers, setConnectingUsers] = useState<Set<number>>(new Set());
   const [pendingSent, setPendingSent] = useState<PendingSentItem[]>([]);
   const [pendingReceived, setPendingReceived] = useState<PendingReceivedItem[]>([]);
@@ -34,6 +43,8 @@ export default function Network({
   const [debouncedQ, setDebouncedQ] = useState("");
   const [searchProfiles, setSearchProfiles] = useState<Profile[] | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [searchHasMore, setSearchHasMore] = useState(false);
+  const [searchLoadingMore, setSearchLoadingMore] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(searchQ), 300);
@@ -47,10 +58,12 @@ export default function Network({
     const skill = filterSkill.trim();
     if (!q && !major && !year && !skill) {
       setSearchProfiles(null);
+      setSearchHasMore(false);
       return;
     }
     if (uid == null) {
       setSearchProfiles([]);
+      setSearchHasMore(false);
       return;
     }
     setSearchLoading(true);
@@ -60,21 +73,105 @@ export default function Network({
       if (major) params.set("major", major);
       if (year) params.set("year", year);
       if (skill) params.set("skill", skill);
+      params.set("offset", "0");
+      params.set("limit", String(HOME_PROFILES_PAGE_SIZE));
       const res = await fetch(`/api/users/search?${params}`, {
         credentials: "include",
       });
       const data = await res.json();
       if (res.ok) {
         setSearchProfiles(data.profiles ?? []);
+        setSearchHasMore(!!data.hasMore);
       } else {
         setSearchProfiles([]);
+        setSearchHasMore(false);
       }
     } catch {
       setSearchProfiles([]);
+      setSearchHasMore(false);
     } finally {
       setSearchLoading(false);
     }
   }, [debouncedQ, filterMajor, filterYear, filterSkill, uid]);
+
+  const loadMoreSearch = useCallback(async () => {
+    const q = debouncedQ.trim();
+    const major = filterMajor.trim();
+    const year = filterYear.trim();
+    const skill = filterSkill.trim();
+    if (!q && !major && !year && !skill) return;
+    if (
+      uid == null ||
+      searchLoading ||
+      searchLoadingMore ||
+      !searchHasMore ||
+      !searchProfiles
+    ) {
+      return;
+    }
+    setSearchLoadingMore(true);
+    try {
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      if (major) params.set("major", major);
+      if (year) params.set("year", year);
+      if (skill) params.set("skill", skill);
+      params.set("offset", String(searchProfiles.length));
+      params.set("limit", String(HOME_PROFILES_PAGE_SIZE));
+      const res = await fetch(`/api/users/search?${params}`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) return;
+      const next = (data.profiles ?? []) as Profile[];
+      setSearchProfiles((prev) => {
+        if (!prev) return next;
+        const seen = new Set(prev.map((p) => p.id));
+        const merged = next.filter((p) => !seen.has(p.id));
+        return [...prev, ...merged];
+      });
+      setSearchHasMore(!!data.hasMore);
+    } finally {
+      setSearchLoadingMore(false);
+    }
+  }, [
+    debouncedQ,
+    filterMajor,
+    filterYear,
+    filterSkill,
+    uid,
+    searchLoading,
+    searchLoadingMore,
+    searchHasMore,
+    searchProfiles,
+  ]);
+
+  useEffect(() => {
+    const el = discoverSentinelRef.current;
+    if (!el || !hasMoreProfiles || loadingMoreProfiles || !onLoadMoreProfiles)
+      return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) void onLoadMoreProfiles();
+      },
+      { root: null, rootMargin: "280px", threshold: 0 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasMoreProfiles, loadingMoreProfiles, onLoadMoreProfiles, profiles.length]);
+
+  useEffect(() => {
+    const el = searchSentinelRef.current;
+    if (!el || !searchHasMore || searchLoadingMore) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) void loadMoreSearch();
+      },
+      { root: null, rootMargin: "280px", threshold: 0 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [searchHasMore, searchLoadingMore, loadMoreSearch, searchProfiles?.length]);
 
   useEffect(() => {
     runSearch();
@@ -316,6 +413,15 @@ export default function Network({
               ))}
             </div>
           )}
+          {searchActive && searchProfiles && searchProfiles.length > 0 && searchHasMore && (
+            <div
+              ref={searchSentinelRef}
+              className="h-10 flex items-center justify-center text-xs text-[var(--muted)] mt-2"
+              aria-hidden
+            >
+              {searchLoadingMore ? "Loading more…" : ""}
+            </div>
+          )}
         </div>
       )}
 
@@ -532,6 +638,15 @@ export default function Network({
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {hasMoreProfiles && (
+        <div
+          ref={discoverSentinelRef}
+          className="h-10 flex items-center justify-center text-xs text-[var(--muted)] mt-2"
+          aria-hidden
+        >
+          {loadingMoreProfiles ? "Loading more people…" : ""}
         </div>
       )}
     </div>

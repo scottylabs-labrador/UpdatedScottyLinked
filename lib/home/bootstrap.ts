@@ -1,8 +1,8 @@
 import { getServerMe, type ServerAppUser } from "@/lib/session";
 import { getConnectedUserIdsAdmin } from "@/lib/db/connections";
 import { getHiddenUserIdsForViewer } from "@/lib/db/blocks";
-import { getFeedPosts } from "@/lib/db/posts";
-import { getProfiles } from "@/lib/db/users";
+import { getFeedPostsPaginated, type FeedCursor } from "@/lib/db/posts";
+import { getProfilesPaginated } from "@/lib/db/users";
 import {
   listGroupsBrowseForViewer,
   listJoinedGroupsForUser,
@@ -13,14 +13,23 @@ import type {
   Profile,
   UserProfile,
 } from "@/lib/types";
+import {
+  HOME_FEED_PAGE_SIZE,
+  HOME_PROFILES_PAGE_SIZE,
+} from "@/lib/home/pagination";
 
 export type HomeBootstrap = {
   userEmail: string | null;
   appUser: ServerAppUser | null;
   profile: UserProfile | null;
   posts: FeedPost[];
+  /** Cursor for the next `/api/feed` page (last item of `posts`). */
+  feedNextCursor: FeedCursor | null;
+  feedHasMore: boolean;
   groups: GroupListItem[];
   profiles: Profile[];
+  profilesNextOffset: number;
+  profilesHasMore: boolean;
   connectedIds: number[];
   myGroups: { id: number; name: string }[];
 };
@@ -33,23 +42,34 @@ export async function getHomeBootstrap(): Promise<HomeBootstrap> {
   const me = await getServerMe();
   const uid = me.appUser?.id ?? null;
 
-  const [connected, hiddenIds, groups, profiles, myGroups] = await Promise.all([
-    uid != null ? getConnectedUserIdsAdmin(uid) : Promise.resolve<number[]>([]),
-    uid != null ? getHiddenUserIdsForViewer(uid) : Promise.resolve<number[]>([]),
-    listGroupsBrowseForViewer(uid),
-    getProfiles(uid ?? 0),
-    uid != null ? listJoinedGroupsForUser(uid) : Promise.resolve([]),
-  ]);
+  const [connected, hiddenIds, groups, profilesPage, myGroups] =
+    await Promise.all([
+      uid != null ? getConnectedUserIdsAdmin(uid) : Promise.resolve<number[]>([]),
+      uid != null ? getHiddenUserIdsForViewer(uid) : Promise.resolve<number[]>([]),
+      listGroupsBrowseForViewer(uid),
+      getProfilesPaginated(uid ?? 0, HOME_PROFILES_PAGE_SIZE, 0),
+      uid != null ? listJoinedGroupsForUser(uid) : Promise.resolve([]),
+    ]);
 
-  const posts = await getFeedPosts(uid, connected, 50, hiddenIds);
+  const feedPage = await getFeedPostsPaginated(
+    uid,
+    connected,
+    HOME_FEED_PAGE_SIZE,
+    hiddenIds,
+    null
+  );
 
   return {
     userEmail: me.userEmail,
     appUser: me.appUser,
     profile: me.profile,
-    posts,
+    posts: feedPage.posts,
+    feedNextCursor: feedPage.nextCursor,
+    feedHasMore: feedPage.hasMore,
     groups,
-    profiles,
+    profiles: profilesPage.profiles,
+    profilesNextOffset: profilesPage.nextOffset,
+    profilesHasMore: profilesPage.hasMore,
     connectedIds: connected,
     myGroups,
   };
