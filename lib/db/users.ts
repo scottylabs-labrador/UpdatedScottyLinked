@@ -6,6 +6,8 @@ import {
   UserProfile,
   ProfileOrganization,
 } from "@/lib/types";
+import { mergeNotificationPrefs } from "@/lib/notificationPrefs";
+import { isThemeMode } from "@/lib/theme";
 
 // Re-export User for backwards compatibility
 export type { User };
@@ -69,6 +71,9 @@ export function rowToUser(row: Record<string, unknown> | null): User | null {
     updated_at: (row.updated_at as string | null) ?? null,
     isModerator: !!(row.is_moderator as boolean | undefined),
     skills: Array.isArray(skillsRaw) ? skillsRaw : [],
+    discoverable: row.discoverable === false ? false : true,
+    notificationPrefs: mergeNotificationPrefs(row.notification_prefs),
+    theme: isThemeMode(row.theme) ? row.theme : "light",
   };
 }
 
@@ -180,6 +185,8 @@ export async function searchUsersForNetwork(
   if (excludeUserId != null) {
     query = query.neq("id", excludeUserId);
   }
+
+  query = query.eq("discoverable", true);
 
   const fetchCap = Math.min(Math.max(maxFetch, 1), 220);
   const { data, error } = await query
@@ -404,6 +411,7 @@ export async function getProfilesPaginated(
       .from("users")
       .select("*")
       .neq("id", currentUserId)
+      .eq("discoverable", true)
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
       .range(start, start + size);

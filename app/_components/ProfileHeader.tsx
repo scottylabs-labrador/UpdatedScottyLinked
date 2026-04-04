@@ -51,12 +51,12 @@ export default function ProfileHeader({ user, actionSlot }: ProfileHeaderProps) 
             </div>
           </div>
           <div className="flex-1 min-w-0 pt-2 sm:pt-14">
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight truncate">
+            <h1 className="text-2xl font-bold text-[var(--foreground)] tracking-tight truncate">
               {user.name}
             </h1>
             <p className="text-sm text-[var(--muted)] truncate">@{user.handle}</p>
             {sub ? (
-              <p className="text-gray-700 mt-1 text-sm flex items-start gap-1.5">
+              <p className="text-[var(--foreground)]/90 mt-1 text-sm flex items-start gap-1.5">
                 <GraduationCap className="w-4 h-4 shrink-0 mt-0.5 text-[var(--muted)]" />
                 <span>{sub}</span>
               </p>
@@ -114,7 +114,7 @@ function ProfileLinkRow({ user }: { user: UserProfile }) {
           href={item.href}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] text-sm font-medium text-gray-800 hover:bg-gray-50 transition min-h-[40px]"
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border)] text-sm font-medium text-[var(--foreground)] hover:bg-[var(--hit-hover)] transition min-h-[40px]"
         >
           {item.icon}
           {item.label}

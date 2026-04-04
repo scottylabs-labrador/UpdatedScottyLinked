@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { isNotificationTypeEnabled } from "@/lib/notificationPrefs";
 
 export type AppNotification = {
   id: number;
@@ -11,6 +12,27 @@ export type AppNotification = {
   meta: Record<string, unknown> | null;
 };
 
+async function userAllowsNotificationType(
+  userId: number,
+  type: string
+): Promise<boolean> {
+  if (!supabaseAdmin) return true;
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("users")
+      .select("notification_prefs")
+      .eq("id", userId)
+      .maybeSingle();
+    if (error || !data) return true;
+    return isNotificationTypeEnabled(
+      data.notification_prefs as Record<string, unknown> | null,
+      type
+    );
+  } catch {
+    return true;
+  }
+}
+
 export async function insertNotification(params: {
   userId: number;
   type: string;
@@ -19,6 +41,8 @@ export async function insertNotification(params: {
   meta?: Record<string, unknown>;
 }): Promise<boolean> {
   if (!supabaseAdmin) return false;
+  const allowed = await userAllowsNotificationType(params.userId, params.type);
+  if (!allowed) return false;
   try {
     const { error } = await supabaseAdmin.from("notifications").insert({
       user_id: params.userId,

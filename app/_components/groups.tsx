@@ -76,7 +76,7 @@ export default function GroupsBrowse({
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+        <h1 className="text-2xl font-bold text-[var(--foreground)] tracking-tight">
           Groups
         </h1>
         <p className="text-sm text-[var(--muted)] mt-1">
@@ -87,32 +87,32 @@ export default function GroupsBrowse({
 
       {currentUserId != null && (
         <div className="card-surface p-5 sm:p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">
             Create a group
           </h2>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
                 Name
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                className="w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface"
                 placeholder="e.g. HCI Research Collective"
                 maxLength={120}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
                 Description
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 resize-none"
+                className="w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface resize-none"
                 placeholder="What is this group for?"
                 maxLength={2000}
               />
@@ -135,13 +135,13 @@ export default function GroupsBrowse({
 
       <div>
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Browse</h2>
+          <h2 className="text-lg font-semibold text-[var(--foreground)]">Browse</h2>
           <input
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search groups…"
-            className="w-full sm:max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+            className="w-full sm:max-w-xs px-3 py-2 border border-[var(--border)] rounded-lg text-sm input-surface"
           />
         </div>
 
@@ -159,16 +159,16 @@ export default function GroupsBrowse({
                   href={`/groups/${g.id}`}
                   className="card-surface p-4 sm:p-5 shadow-sm flex items-start gap-4 hover:border-[var(--brand)]/30 transition-colors group"
                 >
-                  <div className="p-2 rounded-lg bg-blue-50 text-[var(--brand)] shrink-0">
+                  <div className="p-2 rounded-lg bg-[var(--accent-soft)] text-[var(--brand)] shrink-0">
                     <Users className="w-5 h-5" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold text-gray-900 group-hover:text-[var(--brand)]">
+                      <h3 className="font-semibold text-[var(--foreground)] group-hover:text-[var(--brand)]">
                         {g.name}
                       </h3>
                       {g.myRole && (
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-800 border border-green-200">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border border-emerald-500/30">
                           {g.myRole === "owner"
                             ? "Owner"
                             : g.myRole === "moderator"
@@ -177,13 +177,13 @@ export default function GroupsBrowse({
                         </span>
                       )}
                       {g.joinRequestStatus === "pending" && !g.myRole && (
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-950 dark:text-amber-100 border border-amber-500/30">
                           Pending request
                         </span>
                       )}
                     </div>
                     {g.description ? (
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                      <p className="text-sm text-[var(--muted)] mt-1 line-clamp-2">
                         {g.description}
                       </p>
                     ) : null}
@@ -191,7 +191,7 @@ export default function GroupsBrowse({
                       {g.memberCount} member{g.memberCount !== 1 ? "s" : ""}
                     </p>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400 shrink-0 mt-1" />
+                  <ChevronRight className="w-5 h-5 text-[var(--muted)] shrink-0 mt-1" />
                 </Link>
               </li>
             ))}

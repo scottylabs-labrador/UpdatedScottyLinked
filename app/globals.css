@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-/* Light theme locked — app surfaces are light cards on neutral page */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Light (default) */
 :root {
   --page: #f3f4f6;
   --surface: #ffffff;
@@ -11,6 +13,47 @@
   --brand-hover: #1d4ed8;
   --radius-card: 0.75rem;
   --background: var(--surface);
+  /* Forms */
+  --input-bg: #ffffff;
+  --input-text: #111827;
+  --input-placeholder: #9ca3af;
+  /* Tags / small chips (not bright white in dark) */
+  --chip-bg: #e2e8f0;
+  --chip-text: #475569;
+  /* Inactive filter / group pills */
+  --pill-inactive-bg: #ffffff;
+  --pill-inactive-text: #374151;
+  --pill-inactive-hover: #f3f4f6;
+  /* Hit targets, summaries, comment column */
+  --hit-hover: rgba(0, 0, 0, 0.05);
+  --comment-pane-bg: rgba(249, 250, 251, 0.7);
+  /* Nav / notification tint */
+  --accent-soft: rgba(37, 99, 235, 0.1);
+  --notif-unread-row: rgba(37, 99, 235, 0.08);
+}
+
+/* Dark — toggled via `html.dark` (see lib/theme.ts) */
+html.dark {
+  --page: #0f172a;
+  --surface: #1e293b;
+  --foreground: #f1f5f9;
+  --muted: #94a3b8;
+  --border: #334155;
+  --brand: #3b82f6;
+  --brand-hover: #60a5fa;
+  --background: var(--surface);
+  --input-bg: #0f172a;
+  --input-text: #f1f5f9;
+  --input-placeholder: #64748b;
+  --chip-bg: #334155;
+  --chip-text: #e2e8f0;
+  --pill-inactive-bg: #1e293b;
+  --pill-inactive-text: #e2e8f0;
+  --pill-inactive-hover: #334155;
+  --hit-hover: rgba(255, 255, 255, 0.06);
+  --comment-pane-bg: rgba(15, 23, 42, 0.55);
+  --accent-soft: rgba(59, 130, 246, 0.18);
+  --notif-unread-row: rgba(59, 130, 246, 0.14);
 }
 
 @theme inline {
@@ -42,4 +85,39 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
+}
+
+/* Post tags, skill chips — muted in both themes */
+.chip-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  background-color: var(--chip-bg);
+  color: var(--chip-text);
+}
+
+/* Visibility / meta badges */
+.badge-muted {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.375rem;
+  background-color: var(--chip-bg);
+  color: var(--muted);
+}
+
+/* Inputs & textareas — pair with border border-[var(--border)] */
+.input-surface {
+  background-color: var(--input-bg);
+  color: var(--input-text);
+}
+.input-surface::placeholder {
+  color: var(--input-placeholder);
 }

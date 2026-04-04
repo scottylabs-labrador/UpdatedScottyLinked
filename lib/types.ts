@@ -1,5 +1,8 @@
 // ==================== DATABASE SCHEMA TYPES ====================
 
+import type { NotificationPrefsState } from "@/lib/notificationPrefs";
+import type { ThemeMode } from "@/lib/theme";
+
 /** Affiliation row stored in users.organizations (JSON). */
 export interface ProfileOrganization {
   name: string;
@@ -34,6 +37,10 @@ export interface User {
   isModerator?: boolean;
   /** Profile skill tags (discovery). */
   skills?: string[];
+  /** Listed in Network discover + search when true (default). */
+  discoverable: boolean;
+  notificationPrefs: NotificationPrefsState;
+  theme: ThemeMode;
 }
 
 /**

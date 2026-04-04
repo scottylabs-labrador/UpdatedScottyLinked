@@ -8,6 +8,7 @@ import {
 import { isModeratorUser } from "@/lib/moderation";
 import { parseProfilePatchBody } from "@/lib/profileValidation";
 import { userToUserProfile } from "@/lib/db/users";
+import { userPreferencesPayload } from "@/lib/meSettingsPatch";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -52,6 +53,7 @@ export async function GET() {
       skills: appUser.skills ?? [],
     },
     profile,
+    preferences: userPreferencesPayload(appUser),
   });
 }
 

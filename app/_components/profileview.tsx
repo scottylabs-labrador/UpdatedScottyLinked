@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import ProfileHeader from "./ProfileHeader";
 import { UserProfile, ProfileOrganization } from "@/lib/types";
 import { Plus, Trash2, Loader2 } from "lucide-react";
@@ -9,6 +10,8 @@ interface ProfileViewProps {
   user: UserProfile | null;
   loading: boolean;
   onProfileUpdated?: () => void;
+  /** When true (e.g. `/?tab=profile&edit=1`), open the editor immediately. */
+  autoStartEditing?: boolean;
 }
 
 type OrgRow = { name: string; role: string };
@@ -74,7 +77,9 @@ export default function ProfileView({
   user,
   loading,
   onProfileUpdated,
+  autoStartEditing = false,
 }: ProfileViewProps) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadKind, setUploadKind] = useState<"avatar" | "banner" | null>(null);
@@ -90,6 +95,14 @@ export default function ProfileView({
     if (!user || editing) return;
     setForm(toForm(user));
   }, [user, editing]);
+
+  useEffect(() => {
+    if (!autoStartEditing || !user) return;
+    setForm(toForm(user));
+    setError(null);
+    setEditing(true);
+    router.replace("/?tab=profile", { scroll: false });
+  }, [autoStartEditing, user, router]);
 
   const previewUser = useMemo(() => {
     if (!user) return null;
@@ -237,7 +250,7 @@ export default function ProfileView({
                   type="button"
                   onClick={cancelEditing}
                   disabled={saving}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 min-h-[40px] text-sm font-medium"
+                  className="px-4 py-2 border border-[var(--border)] rounded-lg text-[var(--foreground)] hover:bg-[var(--hit-hover)] disabled:opacity-50 min-h-[40px] text-sm font-medium"
                 >
                   Cancel
                 </button>
@@ -272,7 +285,7 @@ export default function ProfileView({
       {editing ? (
         <div className="card-surface p-5 sm:p-6 shadow-sm space-y-8">
           <section>
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            <h3 className="text-sm font-semibold text-[var(--muted)] uppercase tracking-wide mb-3">
               Photos
             </h3>
             <div className="flex flex-wrap gap-4">
@@ -283,7 +296,7 @@ export default function ProfileView({
                     type="button"
                     disabled={!!uploadKind}
                     onClick={() => avatarInputRef.current?.click()}
-                    className="px-3 py-2 text-sm border border-[var(--border)] rounded-lg hover:bg-gray-50 min-h-[40px] inline-flex items-center gap-2"
+                    className="px-3 py-2 text-sm border border-[var(--border)] rounded-lg hover:bg-[var(--hit-hover)] min-h-[40px] inline-flex items-center gap-2"
                   >
                     {uploadKind === "avatar" ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -309,7 +322,7 @@ export default function ProfileView({
                   type="button"
                   disabled={!!uploadKind}
                   onClick={() => bannerInputRef.current?.click()}
-                  className="px-3 py-2 text-sm border border-[var(--border)] rounded-lg hover:bg-gray-50 min-h-[40px] inline-flex items-center gap-2"
+                  className="px-3 py-2 text-sm border border-[var(--border)] rounded-lg hover:bg-[var(--hit-hover)] min-h-[40px] inline-flex items-center gap-2"
                 >
                   {uploadKind === "banner" ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -334,7 +347,7 @@ export default function ProfileView({
             </p>
             <div className="grid sm:grid-cols-2 gap-3 mt-3">
               <label className="block text-sm">
-                <span className="text-gray-700 font-medium">Photo URL</span>
+                <span className="text-[var(--foreground)] font-medium">Photo URL</span>
                 <input
                   type="url"
                   value={form.photoURL}
@@ -342,11 +355,11 @@ export default function ProfileView({
                     setForm((f) => ({ ...f, photoURL: e.target.value }))
                   }
                   placeholder="https://…"
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 text-sm"
+                  className="mt-1 w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface text-sm"
                 />
               </label>
               <label className="block text-sm">
-                <span className="text-gray-700 font-medium">Banner URL</span>
+                <span className="text-[var(--foreground)] font-medium">Banner URL</span>
                 <input
                   type="url"
                   value={form.bannerURL}
@@ -354,17 +367,17 @@ export default function ProfileView({
                     setForm((f) => ({ ...f, bannerURL: e.target.value }))
                   }
                   placeholder="https://…"
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 text-sm"
+                  className="mt-1 w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface text-sm"
                 />
               </label>
             </div>
           </section>
 
           <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+            <h3 className="text-sm font-semibold text-[var(--muted)] uppercase tracking-wide">
               Basics
             </h3>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-[var(--foreground)]">
               Full name
               <input
                 type="text"
@@ -372,17 +385,17 @@ export default function ProfileView({
                 onChange={(e) =>
                   setForm((f) => ({ ...f, name: e.target.value }))
                 }
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                className="mt-1 w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface"
               />
             </label>
           </section>
 
           <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+            <h3 className="text-sm font-semibold text-[var(--muted)] uppercase tracking-wide">
               Academic
             </h3>
             <div className="grid sm:grid-cols-2 gap-3">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-[var(--foreground)]">
                 Major
                 <input
                   type="text"
@@ -391,10 +404,10 @@ export default function ProfileView({
                     setForm((f) => ({ ...f, major: e.target.value }))
                   }
                   placeholder="e.g. Computer Science"
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                  className="mt-1 w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface"
                 />
               </label>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-[var(--foreground)]">
                 Minors
                 <input
                   type="text"
@@ -403,10 +416,10 @@ export default function ProfileView({
                     setForm((f) => ({ ...f, minors: e.target.value }))
                   }
                   placeholder="e.g. Statistics, HCI"
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                  className="mt-1 w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface"
                 />
               </label>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-[var(--foreground)]">
                 Degree
                 <input
                   type="text"
@@ -415,10 +428,10 @@ export default function ProfileView({
                     setForm((f) => ({ ...f, degree: e.target.value }))
                   }
                   placeholder="e.g. B.S."
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                  className="mt-1 w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface"
                 />
               </label>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-[var(--foreground)]">
                 College
                 <input
                   type="text"
@@ -427,10 +440,10 @@ export default function ProfileView({
                     setForm((f) => ({ ...f, college: e.target.value }))
                   }
                   placeholder="e.g. School of Computer Science"
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                  className="mt-1 w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface"
                 />
               </label>
-              <label className="block text-sm font-medium text-gray-700 sm:col-span-2">
+              <label className="block text-sm font-medium text-[var(--foreground)] sm:col-span-2">
                 Class year
                 <input
                   type="text"
@@ -439,14 +452,14 @@ export default function ProfileView({
                     setForm((f) => ({ ...f, year: e.target.value }))
                   }
                   placeholder="e.g. 2026"
-                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                  className="mt-1 w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface"
                 />
               </label>
             </div>
           </section>
 
           <section>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
               About
             </label>
             <textarea
@@ -456,12 +469,12 @@ export default function ProfileView({
               }
               rows={5}
               placeholder="Interests, goals, what you are looking for on ScottyLinked…"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 resize-none"
+              className="w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface resize-none"
             />
           </section>
 
           <section>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
               Skills (comma-separated)
             </label>
             <input
@@ -471,12 +484,12 @@ export default function ProfileView({
                 setForm((f) => ({ ...f, skillsText: e.target.value }))
               }
               placeholder="e.g. React, Python, public speaking"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+              className="w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface"
             />
           </section>
 
           <section>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
               Campus roles (comma-separated)
             </label>
             <input
@@ -486,12 +499,12 @@ export default function ProfileView({
                 setForm((f) => ({ ...f, campusRolesText: e.target.value }))
               }
               placeholder="e.g. Teaching assistant, Orientation counselor"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+              className="w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface"
             />
           </section>
 
           <section>
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <h3 className="text-sm font-semibold text-[var(--muted)] uppercase tracking-wide mb-2">
               Links (https only)
             </h3>
             <div className="space-y-3">
@@ -504,7 +517,7 @@ export default function ProfileView({
                 ] as const
               ).map(([key, label]) => (
                 <label key={key} className="block text-sm">
-                  <span className="text-gray-700 font-medium">{label}</span>
+                  <span className="text-[var(--foreground)] font-medium">{label}</span>
                   <input
                     type="url"
                     value={form[key]}
@@ -512,7 +525,7 @@ export default function ProfileView({
                       setForm((f) => ({ ...f, [key]: e.target.value }))
                     }
                     placeholder="https://…"
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                    className="mt-1 w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface"
                   />
                 </label>
               ))}
@@ -521,7 +534,7 @@ export default function ProfileView({
 
           <section>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+              <h3 className="text-sm font-semibold text-[var(--muted)] uppercase tracking-wide">
                 Organizations & clubs
               </h3>
               <button
@@ -540,7 +553,7 @@ export default function ProfileView({
                   className="flex flex-col sm:flex-row gap-2 sm:items-end"
                 >
                   <label className="flex-1 text-sm">
-                    <span className="text-gray-700 font-medium">Name</span>
+                    <span className="text-[var(--foreground)] font-medium">Name</span>
                     <input
                       type="text"
                       value={row.name}
@@ -548,11 +561,11 @@ export default function ProfileView({
                         updateOrg(i, "name", e.target.value)
                       }
                       placeholder="Organization name"
-                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                      className="mt-1 w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface"
                     />
                   </label>
                   <label className="flex-1 text-sm">
-                    <span className="text-gray-700 font-medium">Role (optional)</span>
+                    <span className="text-[var(--foreground)] font-medium">Role (optional)</span>
                     <input
                       type="text"
                       value={row.role}
@@ -560,7 +573,7 @@ export default function ProfileView({
                         updateOrg(i, "role", e.target.value)
                       }
                       placeholder="e.g. Officer, Member"
-                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900"
+                      className="mt-1 w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface"
                     />
                   </label>
                   <button
@@ -585,18 +598,18 @@ export default function ProfileView({
         <div className="space-y-6">
           <div className="card-surface p-5 sm:p-6 shadow-sm space-y-6">
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+              <h3 className="text-sm font-semibold text-[var(--muted)] uppercase mb-2">
                 Contact
               </h3>
-              <p className="text-gray-800">{user.email}</p>
+              <p className="text-[var(--foreground)]">{user.email}</p>
             </div>
 
             {user.bio?.trim() ? (
               <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+                <h3 className="text-sm font-semibold text-[var(--muted)] uppercase mb-2">
                   About
                 </h3>
-                <p className="text-gray-800 whitespace-pre-wrap">{user.bio}</p>
+                <p className="text-[var(--foreground)] whitespace-pre-wrap">{user.bio}</p>
               </div>
             ) : (
               <p className="text-sm text-[var(--muted)]">No bio yet. Edit your profile to add one.</p>
@@ -604,14 +617,14 @@ export default function ProfileView({
 
             {(user.campusRoles?.length ?? 0) > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+                <h3 className="text-sm font-semibold text-[var(--muted)] uppercase mb-2">
                   Campus roles
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {user.campusRoles.map((r, idx) => (
                     <span
                       key={idx}
-                      className="px-2.5 py-1 bg-slate-100 text-slate-800 rounded-md text-sm"
+                      className="chip-tag"
                     >
                       {r}
                     </span>
@@ -622,12 +635,12 @@ export default function ProfileView({
 
             {(user.organizations?.length ?? 0) > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+                <h3 className="text-sm font-semibold text-[var(--muted)] uppercase mb-2">
                   Organizations
                 </h3>
                 <ul className="space-y-2">
                   {user.organizations.map((o, idx) => (
-                    <li key={idx} className="text-gray-800">
+                    <li key={idx} className="text-[var(--foreground)]">
                       <span className="font-medium">{o.name}</span>
                       {o.role ? (
                         <span className="text-[var(--muted)]"> — {o.role}</span>
@@ -640,14 +653,14 @@ export default function ProfileView({
 
             {user.skills && user.skills.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
+                <h3 className="text-sm font-semibold text-[var(--muted)] uppercase mb-3">
                   Skills
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {user.skills.map((skill: string, idx: number) => (
                     <span
                       key={idx}
-                      className="px-3 py-1.5 bg-slate-100 text-slate-800 rounded-md text-sm font-medium"
+                      className="chip-tag font-medium"
                     >
                       {skill}
                     </span>
@@ -657,10 +670,10 @@ export default function ProfileView({
             )}
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+              <h3 className="text-sm font-semibold text-[var(--muted)] uppercase mb-2">
                 Connections
               </h3>
-              <p className="text-gray-800 font-medium">{user.connections}</p>
+              <p className="text-[var(--foreground)] font-medium">{user.connections}</p>
             </div>
           </div>
         </div>

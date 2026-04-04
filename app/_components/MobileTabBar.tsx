@@ -35,7 +35,7 @@ export default function MobileTabBar() {
     const className = `flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 min-h-[48px] rounded-lg transition-colors ${
       active
         ? "text-[var(--brand)]"
-        : "text-[var(--muted)] hover:text-gray-800"
+        : "text-[var(--muted)] hover:text-[var(--foreground)]"
     }`;
     if (onHome) {
       return (
@@ -88,7 +88,7 @@ export default function MobileTabBar() {
           className={`flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 min-h-[48px] rounded-lg transition-colors ${
             onMessages
               ? "text-[var(--brand)]"
-              : "text-[var(--muted)] hover:text-gray-800"
+              : "text-[var(--muted)] hover:text-[var(--foreground)]"
           }`}
           aria-current={onMessages ? "page" : undefined}
         >

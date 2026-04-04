@@ -323,7 +323,7 @@ export default function GroupDetailPage() {
     return (
       <AppPageContainer maxWidthClass="max-w-2xl">
           <div className="text-center py-12">
-            <p className="text-gray-700">{error ?? "Not found"}</p>
+            <p className="text-[var(--foreground)]">{error ?? "Not found"}</p>
             <Link
               href="/?tab=groups"
               className="mt-4 inline-block text-[var(--brand)] hover:underline text-sm font-medium"
@@ -346,8 +346,8 @@ export default function GroupDetailPage() {
       onClick={() => setTab(id)}
       className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition ${
         tab === id
-          ? "bg-white text-gray-900 shadow-sm ring-1 ring-black/5"
-          : "text-gray-600 hover:text-gray-900"
+          ? "bg-[var(--surface)] text-[var(--foreground)] shadow-sm ring-1 ring-[var(--border)]"
+          : "text-[var(--muted)] hover:text-[var(--foreground)]"
       }`}
     >
       {label}
@@ -364,15 +364,15 @@ export default function GroupDetailPage() {
           ← Groups
         </Link>
 
-        <header className="relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--border)] bg-gradient-to-br from-[var(--brand)]/[0.07] via-white to-slate-50/80 shadow-sm mb-6">
+        <header className="relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--border)] bg-gradient-to-br from-[var(--brand)]/[0.07] via-[var(--surface)] to-[var(--page)]/90 shadow-sm mb-6">
           <div className="p-5 sm:p-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[var(--foreground)] tracking-tight">
                   {group.name}
                 </h1>
                 {group.description ? (
-                  <p className="text-gray-600 mt-3 text-sm sm:text-base leading-relaxed whitespace-pre-wrap max-w-2xl">
+                  <p className="text-[var(--muted)] mt-3 text-sm sm:text-base leading-relaxed whitespace-pre-wrap max-w-2xl">
                     {group.description}
                   </p>
                 ) : (
@@ -381,7 +381,7 @@ export default function GroupDetailPage() {
                   </p>
                 )}
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-gray-700 ring-1 ring-black/5">
+                  <span className="inline-flex items-center rounded-full bg-[var(--chip-bg)]/95 px-3 py-1 text-xs font-semibold text-[var(--chip-text)] ring-1 ring-[var(--border)]">
                     {memberCount} member{memberCount !== 1 ? "s" : ""}
                   </span>
                   {myRole && (
@@ -391,7 +391,7 @@ export default function GroupDetailPage() {
                           ? "bg-amber-50 text-amber-900 ring-amber-200/80"
                           : myRole === "moderator"
                             ? "bg-violet-50 text-violet-900 ring-violet-200/80"
-                            : "bg-slate-50 text-slate-800 ring-slate-200/80"
+                            : "bg-[var(--chip-bg)] text-[var(--chip-text)] ring-[var(--border)]"
                       }`}
                     >
                       {myRole === "owner" ? "Owner" : myRole}
@@ -403,7 +403,7 @@ export default function GroupDetailPage() {
 
             <div className="mt-6 flex flex-wrap items-center gap-2">
               {currentUserId == null && (
-                <p className="text-sm text-gray-600">Sign in to join this group.</p>
+                <p className="text-sm text-[var(--muted)]">Sign in to join this group.</p>
               )}
               {currentUserId != null && !isMember && !pendingJoin && (
                 <button
@@ -425,7 +425,7 @@ export default function GroupDetailPage() {
                   <button
                     type="button"
                     onClick={withdrawApply}
-                    className="text-sm font-medium text-gray-600 hover:text-gray-900 underline-offset-2 hover:underline px-2"
+                    className="text-sm font-medium text-[var(--muted)] hover:text-[var(--foreground)] underline-offset-2 hover:underline px-2"
                   >
                     Withdraw
                   </button>
@@ -447,7 +447,7 @@ export default function GroupDetailPage() {
 
         {isMember && (
           <div
-            className="mb-6 inline-flex flex-wrap gap-1 rounded-full bg-slate-100/90 p-1 ring-1 ring-black/5"
+            className="mb-6 inline-flex flex-wrap gap-1 rounded-full bg-[var(--pill-inactive-hover)] p-1 ring-1 ring-[var(--border)]"
             role="tablist"
             aria-label="Group sections"
           >
@@ -460,8 +460,8 @@ export default function GroupDetailPage() {
 
         {isMember && tab === "discussion" && (
           <div className="space-y-6">
-            <section className="card-surface p-5 shadow-sm ring-1 ring-black/[0.04]">
-              <h2 className="text-sm font-semibold text-gray-900 mb-1">
+            <section className="card-surface p-5 shadow-sm ring-1 ring-[var(--border)]">
+              <h2 className="text-sm font-semibold text-[var(--foreground)] mb-1">
                 Start a discussion
               </h2>
               <p className="text-xs text-[var(--muted)] mb-3">
@@ -472,7 +472,7 @@ export default function GroupDetailPage() {
                   value={postContent}
                   onChange={(e) => setPostContent(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2.5 border border-[var(--border)] rounded-xl text-gray-900 resize-none focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/25"
+                  className="w-full px-3 py-2.5 border border-[var(--border)] rounded-xl input-surface resize-none focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/25"
                   placeholder="Share an update with the group…"
                 />
                 <button
@@ -494,7 +494,7 @@ export default function GroupDetailPage() {
                 posts.map((p) => (
                   <li
                     key={p.id}
-                    className="card-surface p-4 sm:p-5 shadow-sm ring-1 ring-black/[0.04] hover:border-gray-300/80 transition-colors"
+                    className="card-surface p-4 sm:p-5 shadow-sm ring-1 ring-[var(--border)] hover:border-[var(--border)]/80 transition-colors"
                   >
                     <div className="flex gap-3">
                       <Link href={`/profile/${p.authorId}`} className="shrink-0">
@@ -508,7 +508,7 @@ export default function GroupDetailPage() {
                         <div className="flex flex-wrap items-baseline gap-2">
                           <Link
                             href={`/profile/${p.authorId}`}
-                            className="font-semibold text-gray-900 hover:text-[var(--brand)]"
+                            className="font-semibold text-[var(--foreground)] hover:text-[var(--brand)]"
                           >
                             {p.author}
                           </Link>
@@ -517,9 +517,9 @@ export default function GroupDetailPage() {
                           </span>
                         </div>
                         {p.title && p.title !== p.content?.slice(0, 50) && (
-                          <p className="font-medium text-gray-800 mt-1">{p.title}</p>
+                          <p className="font-medium text-[var(--foreground)] mt-1">{p.title}</p>
                         )}
-                        <p className="text-gray-700 text-sm mt-1 whitespace-pre-wrap">
+                        <p className="text-[var(--foreground)] text-sm mt-1 whitespace-pre-wrap">
                           {p.content}
                         </p>
                         <Link
@@ -544,32 +544,32 @@ export default function GroupDetailPage() {
                 onSubmit={submitOpportunity}
                 className="card-surface p-4 sm:p-5 shadow-sm space-y-3"
               >
-                <h3 className="font-semibold text-gray-900">New listing (moderators)</h3>
+                <h3 className="font-semibold text-[var(--foreground)]">New listing (moderators)</h3>
                 <input
                   type="text"
                   value={oppTitle}
                   onChange={(e) => setOppTitle(e.target.value)}
                   placeholder="Title"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm input-surface"
                 />
                 <textarea
                   value={oppDesc}
                   onChange={(e) => setOppDesc(e.target.value)}
                   rows={3}
                   placeholder="Description"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none"
+                  className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm input-surface resize-none"
                 />
                 <input
                   type="text"
                   value={oppSkills}
                   onChange={(e) => setOppSkills(e.target.value)}
                   placeholder="Skills (comma-separated)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm input-surface"
                 />
                 <select
                   value={oppType}
                   onChange={(e) => setOppType(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="px-3 py-2 border border-[var(--border)] rounded-lg text-sm input-surface"
                 >
                   <option value="Project">Project</option>
                   <option value="Internship">Internship</option>
@@ -602,12 +602,12 @@ export default function GroupDetailPage() {
                       className="block card-surface p-4 shadow-sm hover:border-[var(--brand)]/30 transition-colors"
                     >
                       <div className="flex justify-between gap-2">
-                        <h3 className="font-semibold text-gray-900">{o.title}</h3>
-                        <span className="text-xs font-semibold uppercase text-slate-600 shrink-0">
+                        <h3 className="font-semibold text-[var(--foreground)]">{o.title}</h3>
+                        <span className="text-xs font-semibold uppercase text-[var(--muted)] shrink-0">
                           {o.type}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                      <p className="text-sm text-[var(--muted)] mt-1 line-clamp-2">
                         {o.description}
                       </p>
                       <p className="text-xs text-[var(--muted)] mt-2">{o.posted}</p>
@@ -636,7 +636,7 @@ export default function GroupDetailPage() {
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/profile/${m.userId}`}
-                    className="font-medium text-gray-900 hover:text-[var(--brand)]"
+                    className="font-medium text-[var(--foreground)] hover:text-[var(--brand)]"
                   >
                     {m.fullName}
                   </Link>
@@ -650,7 +650,7 @@ export default function GroupDetailPage() {
                         <button
                           type="button"
                           onClick={() => setModerator(m.userId, true)}
-                          className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50"
+                          className="text-xs px-2 py-1 rounded border border-[var(--border)] hover:bg-[var(--hit-hover)]"
                         >
                           Make mod
                         </button>
@@ -658,7 +658,7 @@ export default function GroupDetailPage() {
                         <button
                           type="button"
                           onClick={() => setModerator(m.userId, false)}
-                          className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50"
+                          className="text-xs px-2 py-1 rounded border border-[var(--border)] hover:bg-[var(--hit-hover)]"
                         >
                           Remove mod
                         </button>
@@ -692,16 +692,16 @@ export default function GroupDetailPage() {
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/profile/${r.applicantId}`}
-                      className="font-medium text-gray-900 hover:text-[var(--brand)]"
+                      className="font-medium text-[var(--foreground)] hover:text-[var(--brand)]"
                     >
                       {r.applicantName}
                     </Link>
                     {r.message && (
-                      <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">
+                      <p className="text-sm text-[var(--foreground)] mt-1 whitespace-pre-wrap">
                         {r.message}
                       </p>
                     )}
-                    <p className="text-xs text-gray-400 mt-2">
+                    <p className="text-xs text-[var(--muted)] mt-2">
                       {new Date(r.created_at).toLocaleString()}
                     </p>
                   </div>
@@ -716,7 +716,7 @@ export default function GroupDetailPage() {
                     <button
                       type="button"
                       onClick={() => reviewRequest(r.id, "reject")}
-                      className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      className="flex-1 sm:flex-none px-3 py-2 border border-[var(--border)] rounded-lg text-sm text-[var(--foreground)] hover:bg-[var(--hit-hover)]"
                     >
                       Reject
                     </button>
@@ -742,18 +742,18 @@ export default function GroupDetailPage() {
             className="card-surface max-w-lg w-full p-6 shadow-lg rounded-[var(--radius-card)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">
+            <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">
               Request to join
             </h2>
-            <p className="text-sm text-gray-600 mb-4">{group.name}</p>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <p className="text-sm text-[var(--muted)] mb-4">{group.name}</p>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
               Message
             </label>
             <textarea
               value={applyMessage}
               onChange={(e) => setApplyMessage(e.target.value)}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 resize-none mb-4"
+              className="w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface resize-none mb-4"
               placeholder="Why do you want to join?"
             />
             {applyError && (
@@ -766,7 +766,7 @@ export default function GroupDetailPage() {
                   setApplyOpen(false);
                   setApplyError(null);
                 }}
-                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg"
+                className="px-4 py-2 text-[var(--foreground)] border border-[var(--border)] rounded-lg"
               >
                 Cancel
               </button>

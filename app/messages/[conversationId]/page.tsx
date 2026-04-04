@@ -324,7 +324,7 @@ export default function MessageThreadPage() {
             size="md"
             imageUrl={otherPhoto}
           />
-          <h1 className="text-lg font-semibold text-gray-900 truncate">
+          <h1 className="text-lg font-semibold text-[var(--foreground)] truncate">
             {otherName || "Conversation"}
           </h1>
         </div>
@@ -358,7 +358,7 @@ export default function MessageThreadPage() {
                     className={`flex ${i % 2 === 0 ? "justify-start" : "justify-end"}`}
                   >
                     <div
-                      className="h-14 max-w-[70%] rounded-2xl bg-gray-200/70 motion-safe:animate-pulse"
+                      className="h-14 max-w-[70%] rounded-2xl bg-[var(--chip-bg)]/80 motion-safe:animate-pulse"
                       style={{ width: `${60 + (i % 3) * 12}%` }}
                     />
                   </div>
@@ -379,7 +379,7 @@ export default function MessageThreadPage() {
                       className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm transition-opacity ${
                         mine
                           ? "bg-[var(--brand)] text-white"
-                          : "bg-[var(--surface)] border border-[var(--border)] text-gray-900 shadow-sm"
+                          : "bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground)] shadow-sm"
                       } ${m.pending ? "opacity-85" : ""}`}
                     >
                       <p className="whitespace-pre-wrap wrap-break-word">
@@ -387,7 +387,7 @@ export default function MessageThreadPage() {
                       </p>
                       <p
                         className={`text-[10px] mt-1 ${
-                          mine ? "text-white/80" : "text-gray-400"
+                          mine ? "text-white/80" : "text-[var(--muted)]"
                         }`}
                       >
                         {m.pending
@@ -413,7 +413,7 @@ export default function MessageThreadPage() {
               onChange={(e) => setBody(e.target.value)}
               placeholder="Type a message…"
               disabled={currentUserId == null}
-              className="flex-1 px-4 py-3 border border-[var(--border)] rounded-xl text-gray-900 min-h-[48px] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30"
+              className="flex-1 px-4 py-3 border border-[var(--border)] rounded-xl input-surface min-h-[48px] focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30"
             />
             <button
               type="submit"

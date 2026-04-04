@@ -131,7 +131,7 @@ export default function PostPage() {
     return (
       <AppPageContainer maxWidthClass="max-w-lg">
         <div className="card-surface p-8 text-center shadow-sm">
-          <p className="text-gray-700">{error ?? "Post not found"}</p>
+          <p className="text-[var(--foreground)]">{error ?? "Post not found"}</p>
           <Link
             href="/"
             className="mt-4 inline-block text-[var(--brand)] font-medium hover:underline"
@@ -167,27 +167,27 @@ export default function PostPage() {
                 {post.authorId != null ? (
                   <Link
                     href={`/profile/${post.authorId}`}
-                    className="font-semibold text-gray-900 hover:text-[var(--brand)] hover:underline"
+                    className="font-semibold text-[var(--foreground)] hover:text-[var(--brand)] hover:underline"
                   >
                     {post.author}
                   </Link>
                 ) : (
-                  <span className="font-semibold text-gray-900">{post.author}</span>
+                  <span className="font-semibold text-[var(--foreground)]">{post.author}</span>
                 )}
-                <p className="text-xs text-gray-500 truncate">{post.major} · {post.timestamp}</p>
+                <p className="text-xs text-[var(--muted)] truncate">{post.major} · {post.timestamp}</p>
               </div>
             </div>
             <div className="p-4 flex-1 overflow-auto">
               {post.title && (
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">{post.title}</h2>
+                <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">{post.title}</h2>
               )}
-              <p className="text-gray-800 whitespace-pre-wrap">{post.content}</p>
+              <p className="text-[var(--foreground)]/90 whitespace-pre-wrap">{post.content}</p>
               {post.tags && post.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {post.tags.map((tag, i) => (
                     <span
                       key={i}
-                      className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md text-xs font-medium"
+                      className="chip-tag"
                     >
                       #{tag}
                     </span>
@@ -201,7 +201,7 @@ export default function PostPage() {
                 onClick={handleLike}
                 disabled={currentUserId == null || liking}
                 className={`inline-flex items-center gap-2 min-h-[40px] px-2 rounded-lg transition disabled:opacity-50 ${
-                  post.liked ? "text-red-600" : "text-gray-700 hover:bg-gray-50"
+                  post.liked ? "text-red-600 dark:text-red-400" : "text-[var(--foreground)] hover:bg-[var(--hit-hover)]"
                 }`}
                 aria-label="Like"
               >
@@ -229,13 +229,13 @@ export default function PostPage() {
           </div>
 
           {/* Right: Comments */}
-          <div className="md:w-1/2 flex flex-col bg-gray-50/50 md:bg-transparent">
+          <div className="md:w-1/2 flex flex-col bg-[var(--comment-pane-bg)] md:bg-transparent">
             <div className="p-3 border-b border-[var(--border)]">
-              <h3 className="font-semibold text-gray-900">Comments</h3>
+              <h3 className="font-semibold text-[var(--foreground)]">Comments</h3>
             </div>
             <div className="flex-1 overflow-y-auto min-h-[200px] max-h-[400px] p-3 space-y-4">
               {comments.length === 0 ? (
-                <p className="text-gray-500 text-sm py-4">No comments yet. Be the first!</p>
+                <p className="text-[var(--muted)] text-sm py-4">No comments yet. Be the first!</p>
               ) : (
                 comments.map((c) => (
                   <div key={c.id} className="flex gap-3">
@@ -253,15 +253,15 @@ export default function PostPage() {
                       <div className="flex items-baseline gap-2 flex-wrap">
                         <Link
                           href={`/profile/${c.authorId}`}
-                          className="font-semibold text-gray-900 hover:text-[var(--brand)] hover:underline text-sm"
+                          className="font-semibold text-[var(--foreground)] hover:text-[var(--brand)] hover:underline text-sm"
                         >
                           {c.authorName}
                         </Link>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-[var(--muted)]">
                           {formatCommentTime(c.createdAt)}
                         </span>
                       </div>
-                      <p className="text-gray-800 text-sm mt-0.5 break-words">{c.content}</p>
+                      <p className="text-[var(--foreground)]/90 text-sm mt-0.5 break-words">{c.content}</p>
                     </div>
                   </div>
                 ))
@@ -276,7 +276,7 @@ export default function PostPage() {
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     disabled={submittingComment}
-                    className="flex-1 px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 text-gray-900"
+                    className="flex-1 px-3 py-2 border border-[var(--border)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 input-surface"
                   />
                   <button
                     type="submit"

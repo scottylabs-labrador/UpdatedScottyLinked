@@ -1,6 +1,9 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { User, ProfileOrganization } from "@/lib/types";
 import { rowToUser } from "@/lib/db/users";
+import type { NotificationPrefsState } from "@/lib/notificationPrefs";
+import { prefsToJsonObject } from "@/lib/notificationPrefs";
+import type { ThemeMode } from "@/lib/theme";
 
 const ANDREW_DOMAIN = "@andrew.cmu.edu";
 
@@ -96,6 +99,9 @@ export type AppUserUpdates = {
   resumeUrl?: string | null;
   campusRoles?: string[];
   organizations?: ProfileOrganization[];
+  discoverable?: boolean;
+  notificationPrefs?: NotificationPrefsState;
+  theme?: ThemeMode;
 };
 
 /**
@@ -126,6 +132,11 @@ export async function updateAppUser(
   if (updates.resumeUrl !== undefined) row.resume_url = updates.resumeUrl;
   if (updates.campusRoles !== undefined) row.campus_roles = updates.campusRoles;
   if (updates.organizations !== undefined) row.organizations = updates.organizations;
+  if (updates.discoverable !== undefined) row.discoverable = updates.discoverable;
+  if (updates.notificationPrefs !== undefined) {
+    row.notification_prefs = prefsToJsonObject(updates.notificationPrefs);
+  }
+  if (updates.theme !== undefined) row.theme = updates.theme;
 
   const { data, error } = await supabaseAdmin
     .from("users")

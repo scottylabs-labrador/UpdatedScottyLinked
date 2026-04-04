@@ -13,8 +13,8 @@ import GroupsBrowse from "./groups";
 import Network from "./network";
 import ProfileView from "./profileview";
 import AppShell from "./AppShell";
-import HomeRail from "./HomeRail";
 import { useHomeTab } from "./HomeTabNav";
+import { useSearchParams } from "next/navigation";
 import type { FeedPost, GroupListItem, Profile, UserProfile } from "@/lib/types";
 import type { HomeBootstrap } from "@/lib/home/bootstrap";
 import type { FeedCursor } from "@/lib/db/posts";
@@ -61,7 +61,9 @@ export default function HomePageClient({
 }: {
   initial: HomeBootstrap;
 }) {
-  const { activeHomeTab: activeTab } = useHomeTab();
+  const { activeHomeTab: activeTab, setHomeTab } = useHomeTab();
+  const searchParams = useSearchParams();
+  const autoStartProfileEdit = searchParams.get("edit") === "1";
 
   const seeded = bootstrapToState(initial);
   const [posts, setPosts] = useState<FeedPost[]>(seeded.posts);
@@ -259,17 +261,22 @@ export default function HomePageClient({
         </div>
       )}
 
-      <AppShell
-        aside={
-          appUser ? (
-            <HomeRail
-              user={appUser}
-              profileIncomplete={profileIncomplete}
-              isModerator={appUser.isModerator}
-            />
-          ) : undefined
-        }
-      >
+      {appUser && profileIncomplete && activeTab !== "profile" && (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-950 px-4 py-2.5 text-center text-sm">
+          <span className="text-amber-900">
+            Complete your profile (major and bio) so people can find you on Network.
+          </span>{" "}
+          <button
+            type="button"
+            onClick={() => setHomeTab("profile")}
+            className="font-semibold text-[var(--brand)] hover:underline"
+          >
+            Open Profile
+          </button>
+        </div>
+      )}
+
+      <AppShell>
         {panelWrap(
           "feed",
           <Feed
@@ -311,6 +318,7 @@ export default function HomePageClient({
             user={userProfile}
             loading={false}
             onProfileUpdated={onProfileUpdated}
+            autoStartEditing={autoStartProfileEdit}
           />
         )}
       </AppShell>
@@ -320,7 +328,7 @@ export default function HomePageClient({
           href="/api/auth/debug"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-gray-400 hover:text-gray-600"
+          className="text-xs text-[var(--muted)] hover:text-[var(--foreground)]"
         >
           Auth debug
         </a>

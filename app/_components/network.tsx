@@ -313,7 +313,7 @@ export default function Network({
           placeholder="Search by name or Andrew ID..."
           value={searchQ}
           onChange={(e) => setSearchQ(e.target.value)}
-          className="w-full px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 text-gray-900 placeholder:text-gray-400"
+          className="w-full px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 input-surface"
         />
         <div className="flex flex-col sm:flex-row gap-3">
           <input
@@ -321,31 +321,31 @@ export default function Network({
             placeholder="Filter by major (optional)"
             value={filterMajor}
             onChange={(e) => setFilterMajor(e.target.value)}
-            className="flex-1 px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 text-gray-900"
+            className="flex-1 px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 input-surface"
           />
           <input
             type="text"
             placeholder="Class year e.g. 2026 (optional)"
             value={filterYear}
             onChange={(e) => setFilterYear(e.target.value)}
-            className="flex-1 px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 text-gray-900"
+            className="flex-1 px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 input-surface"
           />
           <input
             type="text"
             placeholder="Skill contains (optional)"
             value={filterSkill}
             onChange={(e) => setFilterSkill(e.target.value)}
-            className="flex-1 px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 text-gray-900"
+            className="flex-1 px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 input-surface"
           />
         </div>
         {searchLoading && searchActive && (
-          <p className="text-sm text-gray-500">Searching...</p>
+          <p className="text-sm text-[var(--muted)]">Searching...</p>
         )}
       </div>
 
       {searchActive && searchProfiles && (
         <div className="mb-10">
-          <h2 className="text-base font-semibold mb-3 text-gray-900">
+          <h2 className="text-base font-semibold mb-3 text-[var(--foreground)]">
             Search results
           </h2>
           {searchProfiles.length === 0 ? (
@@ -357,7 +357,7 @@ export default function Network({
               {searchProfiles.map((profile) => (
                 <div
                   key={profile.id}
-                  className="card-surface p-5 shadow-sm hover:border-gray-300/90 transition"
+                  className="card-surface p-5 shadow-sm hover:border-[var(--border)] transition"
                 >
                   <div className="flex items-start gap-4 mb-4">
                     <Link href={`/profile/${profile.id}`} className="flex-shrink-0">
@@ -370,15 +370,15 @@ export default function Network({
                     <div className="flex-1">
                       <Link
                         href={`/profile/${profile.id}`}
-                        className="text-lg font-bold text-gray-900 hover:text-[var(--brand)] hover:underline"
+                        className="text-lg font-bold text-[var(--foreground)] hover:text-[var(--brand)] hover:underline"
                       >
                         {profile.name}
                       </Link>
-                      <p className="text-gray-600">{profile.major}</p>
-                      <p className="text-sm text-gray-500">{profile.year}</p>
+                      <p className="text-[var(--muted)]">{profile.major}</p>
+                      <p className="text-sm text-[var(--muted)]">{profile.year}</p>
                     </div>
                   </div>
-                  <p className="text-gray-700 text-sm mb-4 line-clamp-3">
+                  <p className="text-[var(--foreground)]/90 text-sm mb-4 line-clamp-3">
                     {profile.bio}
                   </p>
                   {profile.skills.length > 0 && (
@@ -386,7 +386,7 @@ export default function Network({
                       {profile.skills.slice(0, 8).map((s, i) => (
                         <span
                           key={`${profile.id}-${i}-${s}`}
-                          className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs"
+                          className="chip-tag text-xs py-0.5"
                         >
                           {s}
                         </span>
@@ -428,19 +428,19 @@ export default function Network({
       {/* Connection requests */}
       {(pendingSent.length > 0 || pendingReceived.length > 0) && (
         <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-2 text-black">
+          <h2 className="text-lg font-semibold mb-2 text-[var(--foreground)]">
             Connection requests
           </h2>
           {pendingReceived.length > 0 && (
             <div className="card-surface shadow-sm p-4 mb-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">
+              <h3 className="text-sm font-medium text-[var(--muted)] mb-3">
                 Pending requests you received
               </h3>
               <ul className="space-y-3">
                 {pendingReceived.map((r) => (
                   <li
                     key={r.id}
-                    className="flex items-center justify-between gap-4 py-2 border-b border-gray-100 last:border-0"
+                    className="flex items-center justify-between gap-4 py-2 border-b border-[var(--border)] last:border-0"
                   >
                     <Link
                       href={`/profile/${r.requesterId}`}
@@ -451,7 +451,7 @@ export default function Network({
                         size="sm"
                         imageUrl={r.requesterPhotoURL}
                       />
-                      <span className="font-medium text-gray-900 truncate">
+                      <span className="font-medium text-[var(--foreground)] truncate">
                         {r.requesterName}
                       </span>
                     </Link>
@@ -468,7 +468,7 @@ export default function Network({
                         type="button"
                         onClick={() => handleReject(r.id)}
                         disabled={actioningId === r.id}
-                        className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                        className="px-3 py-1.5 text-sm font-medium text-[var(--foreground)] bg-[var(--chip-bg)] rounded-lg hover:opacity-90 disabled:opacity-50"
                       >
                         Reject
                       </button>
@@ -480,14 +480,14 @@ export default function Network({
           )}
           {pendingSent.length > 0 && (
             <div className="card-surface shadow-sm p-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">
+              <h3 className="text-sm font-medium text-[var(--muted)] mb-3">
                 Pending requests you sent
               </h3>
               <ul className="space-y-3">
                 {pendingSent.map((s) => (
                   <li
                     key={s.id}
-                    className="flex items-center justify-between gap-4 py-2 border-b border-gray-100 last:border-0"
+                    className="flex items-center justify-between gap-4 py-2 border-b border-[var(--border)] last:border-0"
                   >
                     <Link
                       href={`/profile/${s.receiverId}`}
@@ -498,7 +498,7 @@ export default function Network({
                         size="sm"
                         imageUrl={s.receiverPhotoURL}
                       />
-                      <span className="font-medium text-gray-900 truncate">
+                      <span className="font-medium text-[var(--foreground)] truncate">
                         {s.receiverName}
                       </span>
                     </Link>
@@ -506,7 +506,7 @@ export default function Network({
                       type="button"
                       onClick={() => handleCancel(s.id)}
                       disabled={actioningId === s.id}
-                      className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                      className="px-3 py-1.5 text-sm font-medium text-[var(--foreground)] bg-[var(--chip-bg)] rounded-lg hover:opacity-90 disabled:opacity-50"
                     >
                       Cancel request
                     </button>
@@ -519,11 +519,11 @@ export default function Network({
       )}
 
       {/* Connected Users */}
-      <h2 className="text-lg font-semibold mb-2 text-black">
+      <h2 className="text-lg font-semibold mb-2 text-[var(--foreground)]">
         Your Connections
       </h2>
       {connectedProfiles.length === 0 ? (
-        <div className="card-surface shadow-sm p-6 text-center text-gray-500 mb-6">
+        <div className="card-surface shadow-sm p-6 text-center text-[var(--muted)] mb-6">
           No connections yet.
         </div>
       ) : (
@@ -531,7 +531,7 @@ export default function Network({
           {connectedProfiles.map((profile) => (
             <div
               key={profile.id}
-              className="card-surface shadow-sm p-6 hover:border-gray-300/90 transition"
+              className="card-surface shadow-sm p-6 hover:border-[var(--border)] transition"
             >
               <div className="flex items-start gap-4 mb-4">
                 <Link href={`/profile/${profile.id}`} className="flex-shrink-0">
@@ -544,29 +544,29 @@ export default function Network({
                 <div className="flex-1">
                   <Link
                     href={`/profile/${profile.id}`}
-                    className="text-lg font-bold text-gray-900 hover:text-[var(--brand)] hover:underline"
+                    className="text-lg font-bold text-[var(--foreground)] hover:text-[var(--brand)] hover:underline"
                   >
                     {profile.name}
                   </Link>
-                  <p className="text-gray-600">{profile.major}</p>
-                  <p className="text-sm text-gray-500">{profile.year}</p>
+                  <p className="text-[var(--muted)]">{profile.major}</p>
+                  <p className="text-sm text-[var(--muted)]">{profile.year}</p>
                 </div>
               </div>
-              <p className="text-gray-700 text-sm mb-4">{profile.bio}</p>
+              <p className="text-[var(--foreground)]/90 text-sm mb-4">{profile.bio}</p>
               <div className="flex flex-wrap gap-2 mb-4">
                 {profile.skills
                   .slice(0, 3)
                   .map((skill: string, idx: number) => (
                     <span
                       key={idx}
-                      className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium"
+                      className="px-2 py-1 rounded text-xs font-medium bg-[var(--accent-soft)] text-[var(--brand)]"
                     >
                       {skill}
                     </span>
                   ))}
               </div>
-              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                <span className="text-sm text-gray-600 ">
+              <div className="flex items-center justify-between pt-4 border-t border-[var(--border)]">
+                <span className="text-sm text-[var(--muted)] ">
                   {profile.connections} connections
                 </span>
                 {/* No connect button for already connected */}
@@ -576,11 +576,11 @@ export default function Network({
         </div>
       )}
       {/* New People Section */}
-      <h2 className="text-lg font-semibold mb-2 text-black">
+      <h2 className="text-lg font-semibold mb-2 text-[var(--foreground)]">
         Discover New People
       </h2>
       {notConnectedProfiles.length === 0 ? (
-        <div className="card-surface shadow-sm p-6 text-center text-gray-500">
+        <div className="card-surface shadow-sm p-6 text-center text-[var(--muted)]">
           No new people to discover right now.
         </div>
       ) : (
@@ -588,7 +588,7 @@ export default function Network({
           {notConnectedProfiles.map((profile) => (
             <div
               key={profile.id}
-              className="card-surface shadow-sm p-6 hover:border-gray-300/90 transition"
+              className="card-surface shadow-sm p-6 hover:border-[var(--border)] transition"
             >
               <div className="flex items-start gap-4 mb-4">
                 <Link href={`/profile/${profile.id}`} className="flex-shrink-0">
@@ -601,29 +601,29 @@ export default function Network({
                 <div className="flex-1">
                   <Link
                     href={`/profile/${profile.id}`}
-                    className="text-lg font-bold text-gray-900 hover:text-[var(--brand)] hover:underline"
+                    className="text-lg font-bold text-[var(--foreground)] hover:text-[var(--brand)] hover:underline"
                   >
                     {profile.name}
                   </Link>
-                  <p className="text-gray-600">{profile.major}</p>
-                  <p className="text-sm text-gray-500">{profile.year}</p>
+                  <p className="text-[var(--muted)]">{profile.major}</p>
+                  <p className="text-sm text-[var(--muted)]">{profile.year}</p>
                 </div>
               </div>
-              <p className="text-gray-700 text-sm mb-4">{profile.bio}</p>
+              <p className="text-[var(--foreground)]/90 text-sm mb-4">{profile.bio}</p>
               <div className="flex flex-wrap gap-2 mb-4">
                 {profile.skills
                   .slice(0, 3)
                   .map((skill: string, idx: number) => (
                     <span
                       key={idx}
-                      className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium"
+                      className="px-2 py-1 rounded text-xs font-medium bg-[var(--accent-soft)] text-[var(--brand)]"
                     >
                       {skill}
                     </span>
                   ))}
               </div>
-              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                <span className="text-sm text-gray-600">
+              <div className="flex items-center justify-between pt-4 border-t border-[var(--border)]">
+                <span className="text-sm text-[var(--muted)]">
                   {profile.connections} connections
                 </span>
                 <button

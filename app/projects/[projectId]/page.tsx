@@ -142,7 +142,7 @@ export default function ProjectDetailPage() {
     return (
       <AppPageContainer maxWidthClass="max-w-2xl">
           <div className="text-center py-12">
-            <p className="text-gray-700">{error ?? "Not found"}</p>
+            <p className="text-[var(--foreground)]">{error ?? "Not found"}</p>
             <Link
               href="/?tab=groups"
               className="mt-4 inline-block text-[var(--brand)] hover:underline text-sm font-medium"
@@ -176,8 +176,8 @@ export default function ProjectDetailPage() {
         <div className="card-surface p-6 md:p-8 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{project.title}</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-2xl font-bold text-[var(--foreground)]">{project.title}</h1>
+              <p className="text-[var(--muted)] mt-1">
                 Posted by{" "}
                 <Link
                   href={`/profile/${project.authorID}`}
@@ -186,26 +186,26 @@ export default function ProjectDetailPage() {
                   {project.author}
                 </Link>
                 {" · "}
-                <span className="text-gray-500">{formatPosted(project.created_at)}</span>
+                <span className="text-[var(--muted)]">{formatPosted(project.created_at)}</span>
               </p>
             </div>
-            <span className="px-2.5 py-0.5 bg-slate-100 text-slate-800 rounded-md text-xs font-semibold uppercase tracking-wide shrink-0">
+            <span className="badge-muted px-2.5 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wide shrink-0">
               {project.type || "Project"}
             </span>
           </div>
 
-          <p className="text-gray-800 whitespace-pre-wrap mb-6">{project.description}</p>
+          <p className="text-[var(--foreground)] whitespace-pre-wrap mb-6">{project.description}</p>
 
           {project.skills.length > 0 && (
             <div className="mb-6">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+              <h2 className="text-sm font-semibold text-[var(--muted)] uppercase mb-2">
                 Skills
               </h2>
               <div className="flex flex-wrap gap-2">
                 {project.skills.map((s, i) => (
                   <span
                     key={`${s}-${i}`}
-                    className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm"
+                    className="chip-tag rounded-full"
                   >
                     {s}
                   </span>
@@ -214,11 +214,11 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--border)]">
             {currentUserId == null ? (
-              <p className="text-sm text-gray-500">Sign in to express interest.</p>
+              <p className="text-sm text-[var(--muted)]">Sign in to express interest.</p>
             ) : isOwner ? (
-              <p className="text-sm text-gray-600">This is your listing.</p>
+              <p className="text-sm text-[var(--muted)]">This is your listing.</p>
             ) : hasInterest ? (
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <span className="flex-1 text-center py-2 px-4 bg-green-50 text-green-800 rounded-lg font-medium border border-green-200">
@@ -227,7 +227,7 @@ export default function ProjectDetailPage() {
                 <button
                   type="button"
                   onClick={withdrawInterest}
-                  className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 min-h-[44px]"
+                  className="px-4 py-2 text-sm text-[var(--foreground)] border border-[var(--border)] rounded-lg hover:bg-[var(--hit-hover)] min-h-[44px]"
                 >
                   Withdraw
                 </button>
@@ -260,11 +260,11 @@ export default function ProjectDetailPage() {
         {isOwner && interests.length > 0 && (
           <div className="mt-8 card-surface overflow-hidden shadow-sm">
             <div className="px-6 py-3 border-b border-[var(--border)] bg-[var(--surface)]">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-[var(--foreground)]">
                 Pending interest
               </h2>
             </div>
-            <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-[var(--border)]">
               {interests.map((item) => (
                 <li key={item.id} className="px-6 py-4 flex gap-4">
                   <Link href={`/profile/${item.applicantId}`} className="shrink-0">
@@ -275,7 +275,7 @@ export default function ProjectDetailPage() {
                     />
                   </Link>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-[var(--foreground)]">
                       <Link
                         href={`/profile/${item.applicantId}`}
                         className="hover:text-[var(--brand)] hover:underline"
@@ -284,11 +284,11 @@ export default function ProjectDetailPage() {
                       </Link>
                     </p>
                     {item.message && (
-                      <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">
+                      <p className="text-sm text-[var(--foreground)] mt-1 whitespace-pre-wrap">
                         {item.message}
                       </p>
                     )}
-                    <p className="text-xs text-gray-400 mt-2">
+                    <p className="text-xs text-[var(--muted)] mt-2">
                       {new Date(item.created_at).toLocaleString()}
                     </p>
                   </div>
@@ -313,11 +313,11 @@ export default function ProjectDetailPage() {
             className="card-surface max-w-lg w-full p-6 shadow-lg rounded-[var(--radius-card)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">
+            <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">
               Express interest
             </h2>
-            <p className="text-sm text-gray-600 mb-4">{project.title}</p>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <p className="text-sm text-[var(--muted)] mb-4">{project.title}</p>
+            <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
               Message (optional)
             </label>
             <textarea
@@ -325,7 +325,7 @@ export default function ProjectDetailPage() {
               onChange={(e) => setInterestMessage(e.target.value)}
               rows={4}
               placeholder="Introduce yourself…"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 resize-none mb-4"
+              className="w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface resize-none mb-4"
               disabled={interestSubmitting}
             />
             {interestError && (
@@ -338,7 +338,7 @@ export default function ProjectDetailPage() {
                   setInterestOpen(false);
                   setInterestError(null);
                 }}
-                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-[var(--foreground)] border border-[var(--border)] rounded-lg hover:bg-[var(--hit-hover)]"
                 disabled={interestSubmitting}
               >
                 Cancel

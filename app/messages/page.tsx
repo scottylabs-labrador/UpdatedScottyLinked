@@ -21,10 +21,10 @@ function InboxSkeleton() {
     <ul className="divide-y divide-[var(--border)] card-surface overflow-hidden shadow-sm">
       {[0, 1, 2, 3, 4, 5].map((i) => (
         <li key={i} className="px-4 py-3 flex gap-4 min-h-[56px]">
-          <div className="w-10 h-10 rounded-full bg-gray-200/80 motion-safe:animate-pulse shrink-0" />
+          <div className="w-10 h-10 rounded-full bg-[var(--chip-bg)] motion-safe:animate-pulse shrink-0" />
           <div className="flex-1 space-y-2 py-1 min-w-0">
-            <div className="h-4 bg-gray-200/70 rounded w-1/3 motion-safe:animate-pulse" />
-            <div className="h-3 bg-gray-200/50 rounded w-4/5 motion-safe:animate-pulse" />
+            <div className="h-4 bg-[var(--chip-bg)]/80 rounded w-1/3 motion-safe:animate-pulse" />
+            <div className="h-3 bg-[var(--chip-bg)]/60 rounded w-4/5 motion-safe:animate-pulse" />
           </div>
         </li>
       ))}
@@ -112,7 +112,7 @@ export default function MessagesInboxPage() {
 
   return (
     <AppPageContainer maxWidthClass="max-w-2xl">
-      <h1 className="text-xl font-bold text-gray-900 mb-4 tracking-tight">
+      <h1 className="text-xl font-bold text-[var(--foreground)] mb-4 tracking-tight">
         Messages
       </h1>
       {unauth ? (
@@ -130,8 +130,8 @@ export default function MessagesInboxPage() {
             <li key={c.conversationId}>
               <Link
                 href={`/messages/${c.conversationId}`}
-                className={`flex items-center gap-4 px-4 py-3 hover:bg-gray-50 transition min-h-[56px] ${
-                  c.unread ? "bg-blue-50/50" : ""
+                className={`flex items-center gap-4 px-4 py-3 hover:bg-[var(--hit-hover)] transition min-h-[56px] ${
+                  c.unread ? "bg-[var(--notif-unread-row)]" : ""
                 }`}
               >
                 <Avatar
@@ -141,14 +141,14 @@ export default function MessagesInboxPage() {
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-gray-900 truncate">
+                    <span className="font-semibold text-[var(--foreground)] truncate">
                       {c.otherName}
                     </span>
-                    <span className="text-xs text-gray-400 shrink-0">
+                    <span className="text-xs text-[var(--muted)] shrink-0">
                       {new Date(c.lastAt).toLocaleString()}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 truncate">
+                  <p className="text-sm text-[var(--muted)] truncate">
                     {c.lastBody || "No messages yet"}
                   </p>
                 </div>

@@ -16,6 +16,7 @@ export type { HomeTab };
 
 function replaceHomeUrl(tab: HomeTab) {
   const params = new URLSearchParams(window.location.search);
+  params.delete("edit");
   if (tab === "feed") params.delete("tab");
   else params.set("tab", tab);
   const qs = params.toString();

@@ -91,15 +91,15 @@ export default function AdminReportsPage() {
   return (
     <AppPageContainer maxWidthClass="max-w-5xl">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Moderation queue</h1>
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">Moderation queue</h1>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Show</label>
+            <label className="text-sm text-[var(--muted)]">Show</label>
             <select
               value={statusFilter}
               onChange={(e) =>
                 setStatusFilter(e.target.value as "open" | "all")
               }
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white"
+              className="border border-[var(--border)] rounded-lg px-3 py-2 text-sm input-surface"
             >
               <option value="open">Open only</option>
               <option value="all">All statuses</option>
@@ -108,7 +108,7 @@ export default function AdminReportsPage() {
         </div>
 
         {loading ? (
-          <p className="text-gray-500">Loading reports…</p>
+          <p className="text-[var(--muted)]">Loading reports…</p>
         ) : reports.length === 0 ? (
           <div className="card-surface p-10 text-center text-[var(--muted)] text-sm shadow-sm">
             No reports in this view.
@@ -120,7 +120,7 @@ export default function AdminReportsPage() {
                 key={r.id}
                 className="card-surface p-5 shadow-sm"
               >
-                <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-2">
+                <div className="flex flex-wrap gap-2 text-xs text-[var(--muted)] mb-2">
                   <span className="font-mono">#{r.id}</span>
                   <span>
                     {r.target_type} #{r.target_id}
@@ -129,7 +129,7 @@ export default function AdminReportsPage() {
                     className={
                       r.status === "open"
                         ? "text-amber-700 font-medium"
-                        : "text-gray-600"
+                        : "text-[var(--muted)]"
                     }
                   >
                     {r.status}
@@ -138,16 +138,16 @@ export default function AdminReportsPage() {
                     {new Date(r.created_at).toLocaleString()}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 mb-1">
+                <p className="text-sm text-[var(--muted)] mb-1">
                   Reporter user id: {r.reporter_id}
                 </p>
-                <p className="font-medium text-gray-900 mb-2">{r.reason}</p>
+                <p className="font-medium text-[var(--foreground)] mb-2">{r.reason}</p>
                 {r.details && (
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap mb-3">
+                  <p className="text-sm text-[var(--foreground)] whitespace-pre-wrap mb-3">
                     {r.details}
                   </p>
                 )}
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-[var(--muted)] mb-1">
                   Moderator notes (optional)
                 </label>
                 <textarea
@@ -159,7 +159,7 @@ export default function AdminReportsPage() {
                     }))
                   }
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 mb-3 resize-y"
+                  className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm input-surface mb-3 resize-y"
                   placeholder="Internal notes…"
                 />
                 {r.status === "open" && (
@@ -176,7 +176,7 @@ export default function AdminReportsPage() {
                       type="button"
                       disabled={actingId === r.id}
                       onClick={() => patch(r.id, "dismissed")}
-                      className="px-4 py-2 border border-gray-300 text-gray-800 text-sm font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50 min-h-[44px]"
+                      className="px-4 py-2 border border-[var(--border)] text-[var(--foreground)] text-sm font-medium rounded-lg hover:bg-[var(--hit-hover)] disabled:opacity-50 min-h-[44px]"
                     >
                       {actingId === r.id ? "…" : "Dismiss"}
                     </button>

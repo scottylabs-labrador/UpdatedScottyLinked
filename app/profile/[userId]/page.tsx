@@ -175,7 +175,7 @@ export default function PublicProfilePage() {
     return (
       <AppPageContainer>
         <div className="card-surface p-8 text-center shadow-sm space-y-3">
-          <p className="text-gray-700">{error ?? "User not found"}</p>
+          <p className="text-[var(--foreground)]">{error ?? "User not found"}</p>
           <Link
             href="/"
             className="text-[var(--brand)] font-medium hover:underline"
@@ -204,12 +204,12 @@ export default function PublicProfilePage() {
         )}
         {connectionState.status === "pending_sent" && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Pending request</span>
+            <span className="text-sm text-[var(--muted)]">Pending request</span>
             <button
               type="button"
               onClick={cancelRequest}
               disabled={connectionBusy}
-              className="px-4 py-2 text-gray-700 bg-gray-200 text-sm font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50"
+              className="px-4 py-2 text-[var(--foreground)] bg-[var(--chip-bg)] text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50"
             >
               Cancel request
             </button>
@@ -229,14 +229,14 @@ export default function PublicProfilePage() {
               type="button"
               onClick={rejectRequest}
               disabled={connectionBusy}
-              className="px-4 py-2 text-gray-700 bg-gray-200 text-sm font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50"
+              className="px-4 py-2 text-[var(--foreground)] bg-[var(--chip-bg)] text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50"
             >
               Reject
             </button>
           </div>
         )}
         {connectionState.status === "connected" && (
-          <span className="text-sm text-gray-500 font-medium">Connected</span>
+          <span className="text-sm text-[var(--muted)] font-medium">Connected</span>
         )}
       </div>
     ) : null;
@@ -248,7 +248,7 @@ export default function PublicProfilePage() {
           type="button"
           onClick={startMessage}
           disabled={actionBusy}
-          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 min-h-[40px]"
+          className="px-3 py-1.5 text-sm border border-[var(--border)] rounded-lg hover:bg-[var(--hit-hover)] min-h-[40px]"
         >
           Message
         </button>
@@ -263,7 +263,7 @@ export default function PublicProfilePage() {
           type="button"
           onClick={blockUser}
           disabled={actionBusy}
-          className="px-3 py-1.5 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 min-h-[40px]"
+          className="px-3 py-1.5 text-sm text-[var(--foreground)] border border-[var(--border)] rounded-lg hover:bg-[var(--hit-hover)] min-h-[40px]"
         >
           Block
         </button>
@@ -286,7 +286,7 @@ export default function PublicProfilePage() {
               <div className="flex flex-col items-stretch sm:items-end gap-2">
                 {isOwn && (
                   <Link
-                    href="/?tab=profile"
+                    href="/?tab=profile&edit=1"
                     className="px-4 py-2 min-h-[40px] border-2 border-[var(--brand)] text-[var(--brand)] rounded-lg hover:bg-blue-50/80 transition font-semibold text-sm text-center"
                   >
                     Edit profile
@@ -300,18 +300,18 @@ export default function PublicProfilePage() {
 
           <div className="card-surface p-5 sm:p-6 shadow-sm space-y-6">
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+              <h3 className="text-sm font-semibold text-[var(--muted)] uppercase mb-2">
                 Contact
               </h3>
-              <p className="text-gray-800">{user.email}</p>
+              <p className="text-[var(--foreground)]">{user.email}</p>
             </div>
 
             {user.bio?.trim() ? (
               <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+                <h3 className="text-sm font-semibold text-[var(--muted)] uppercase mb-2">
                   About
                 </h3>
-                <p className="text-gray-800 whitespace-pre-wrap">{user.bio}</p>
+                <p className="text-[var(--foreground)] whitespace-pre-wrap">{user.bio}</p>
               </div>
             ) : (
               <p className="text-sm text-[var(--muted)]">No bio yet.</p>
@@ -319,14 +319,14 @@ export default function PublicProfilePage() {
 
             {(user.campusRoles?.length ?? 0) > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+                <h3 className="text-sm font-semibold text-[var(--muted)] uppercase mb-2">
                   Campus roles
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {user.campusRoles.map((r, idx) => (
                     <span
                       key={idx}
-                      className="px-2.5 py-1 bg-slate-100 text-slate-800 rounded-md text-sm"
+                      className="chip-tag"
                     >
                       {r}
                     </span>
@@ -337,12 +337,12 @@ export default function PublicProfilePage() {
 
             {(user.organizations?.length ?? 0) > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+                <h3 className="text-sm font-semibold text-[var(--muted)] uppercase mb-2">
                   Organizations
                 </h3>
                 <ul className="space-y-2">
                   {user.organizations.map((o, idx) => (
-                    <li key={idx} className="text-gray-800">
+                    <li key={idx} className="text-[var(--foreground)]">
                       <span className="font-medium">{o.name}</span>
                       {o.role ? (
                         <span className="text-[var(--muted)]"> — {o.role}</span>
@@ -355,14 +355,14 @@ export default function PublicProfilePage() {
 
             {user.skills && user.skills.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
+                <h3 className="text-sm font-semibold text-[var(--muted)] uppercase mb-3">
                   Skills
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {user.skills.map((skill: string, idx: number) => (
                     <span
                       key={idx}
-                      className="px-3 py-1.5 bg-slate-100 text-slate-800 rounded-md text-sm font-medium"
+                      className="chip-tag font-medium"
                     >
                       {skill}
                     </span>

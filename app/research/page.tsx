@@ -25,7 +25,7 @@ export default function ResearchPage() {
 
   return (
     <AppPageContainer maxWidthClass="max-w-6xl">
-        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-8 text-gray-900 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-8 text-[var(--foreground)] tracking-tight">
           Research opportunities
         </h1>
 
@@ -33,34 +33,34 @@ export default function ResearchPage() {
           {researches.map((r) => (
             <div
               key={r.id}
-              className="card-surface p-6 shadow-sm rounded-[var(--radius-card)] transition hover:border-gray-300"
+              className="card-surface p-6 shadow-sm rounded-[var(--radius-card)] transition hover:border-[var(--border)]"
             >
             {r.position ? (
               <>
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">{r.position}</h2>
-                <p className="text-sm text-gray-500 mb-2"><span className="font-medium">Field: </span>{r.field}</p>
-                <p className="text-sm text-gray-500 mb-2"><span className="font-medium">Led by: </span>{r.leadType}</p>
+                <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">{r.position}</h2>
+                <p className="text-sm text-[var(--muted)] mb-2"><span className="font-medium text-[var(--foreground)]">Field: </span>{r.field}</p>
+                <p className="text-sm text-[var(--muted)] mb-2"><span className="font-medium text-[var(--foreground)]">Led by: </span>{r.leadType}</p>
 
                 <div className="mb-3">
-                  <p className="text-sm font-semibold text-gray-700 mb-1">Experience Needed:</p>
-                  <p className="text-gray-600 text-sm">{r.experienceNeeded}</p>
+                  <p className="text-sm font-semibold text-[var(--foreground)] mb-1">Experience Needed:</p>
+                  <p className="text-[var(--muted)] text-sm">{r.experienceNeeded}</p>
                 </div>
 
                 {r.skills.length > 0 && (
                   <div className="mb-4">
-                    <p className="text-sm font-semibold text-gray-700 mb-2">Required Skills:</p>
+                    <p className="text-sm font-semibold text-[var(--foreground)] mb-2">Required Skills:</p>
                     <div className="flex flex-wrap gap-2">
                       {r.skills.map((skill, idx) => (
-                        <span key={idx} className="bg-green-100 text-green-700 text-xs font-medium px-3 py-1 rounded-full">{skill}</span>
+                        <span key={idx} className="chip-tag rounded-full">{skill}</span>
                       ))}
                     </div>
                   </div>
                 )}
 
-                <p className="text-sm text-gray-700"><span className="font-medium">Experience:</span> {r.experience}</p>
+                <p className="text-sm text-[var(--foreground)]"><span className="font-medium">Experience:</span> {r.experience}</p>
               </>
             ) : (
-              <div className="flex flex-col justify-center items-center text-gray-400 h-full text-center">
+              <div className="flex flex-col justify-center items-center text-[var(--muted)] h-full text-center">
                 <p className="text-lg font-medium mb-1">No research data yet</p>
                 <p className="text-sm">Waiting for backend data...</p>
               </div>

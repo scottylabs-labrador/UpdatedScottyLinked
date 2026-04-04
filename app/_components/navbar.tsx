@@ -16,7 +16,7 @@ export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
       className={`px-4 py-2 font-semibold transition-all text-sm ${
         activeTab === tab
           ? 'text-blue-600 border-b-2 border-blue-600'
-          : 'text-gray-600 hover:text-gray-900'
+          : 'text-[var(--muted)] hover:text-[var(--foreground)]'
       }`}
     >
       <span>{label}</span>
@@ -24,7 +24,7 @@ export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
   );
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-[var(--surface)] border-b border-[var(--border)] sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
@@ -35,7 +35,7 @@ export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
               height={40}
               className="rounded-lg object-cover"
             />
-            <span className="text-xl font-bold text-gray-900">ScottyLinked</span>
+            <span className="text-xl font-bold text-[var(--foreground)]">ScottyLinked</span>
           </div>
           
           <nav className="flex gap-1">

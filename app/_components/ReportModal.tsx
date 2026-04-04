@@ -66,29 +66,29 @@ export default function ReportModal({
         className="bg-[var(--surface)] rounded-[var(--radius-card)] border border-[var(--border)] shadow-xl max-w-md w-full p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Report content</h2>
+        <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">Report content</h2>
         <p className="text-sm text-[var(--muted)] mb-4">
           Reporting {targetType} #{targetId}. Moderators will review this report.
         </p>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
           Reason
         </label>
         <input
           type="text"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-gray-900 mb-3 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30"
+          className="w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface mb-3 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30"
           placeholder="Brief summary"
           disabled={submitting}
         />
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
           Details (optional)
         </label>
         <textarea
           value={details}
           onChange={(e) => setDetails(e.target.value)}
           rows={3}
-          className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-gray-900 resize-none mb-3 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30"
+          className="w-full px-3 py-2 border border-[var(--border)] rounded-lg input-surface resize-none mb-3 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30"
           disabled={submitting}
         />
         {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
@@ -96,7 +96,7 @@ export default function ReportModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 min-h-[40px] border border-[var(--border)] rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium"
+            className="px-4 py-2 min-h-[40px] border border-[var(--border)] rounded-lg text-[var(--foreground)] hover:bg-[var(--hit-hover)] text-sm font-medium"
             disabled={submitting}
           >
             Cancel

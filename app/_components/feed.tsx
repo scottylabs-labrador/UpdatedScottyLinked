@@ -248,7 +248,7 @@ export default function Feed({
     if (post.visibilitySummary) {
       return (
         <span
-          className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md max-w-[min(280px,55vw)] truncate"
+          className="ml-2 badge-muted max-w-[min(280px,55vw)] truncate"
           title={post.visibilitySummary}
         >
           <Eye className="w-3 h-3 shrink-0" />
@@ -259,7 +259,7 @@ export default function Feed({
     if (post.audience) {
       const aud = audienceLabel(post.audience);
       return (
-        <span className="ml-2 inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md">
+        <span className="ml-2 badge-muted">
           <aud.Icon className="w-3 h-3 shrink-0" />
           {aud.label}
         </span>
@@ -278,7 +278,7 @@ export default function Feed({
           <input
             type="text"
             placeholder="Post Title (optional)"
-            className="w-full px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 text-gray-900 placeholder:text-gray-400"
+            className="w-full px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 input-surface"
             value={postTitle}
             onChange={(e) => setPostTitle(e.target.value)}
             disabled={isPosting}
@@ -287,7 +287,7 @@ export default function Feed({
           {/* Content Field */}
           <textarea
             placeholder="Share something with the CMU community..."
-            className="w-full px-3 py-2.5 border border-[var(--border)] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 text-gray-900 placeholder:text-gray-400"
+            className="w-full px-3 py-2.5 border border-[var(--border)] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 input-surface"
             rows={4}
             value={postContent}
             onChange={(e) => setPostContent(e.target.value)}
@@ -297,24 +297,24 @@ export default function Feed({
           <input
             type="text"
             placeholder="Tags (comma-separated, e.g., tech, research)"
-            className="w-full px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 text-sm text-gray-900"
+            className="w-full px-3 py-2.5 border border-[var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/30 text-sm input-surface"
             value={postTags}
             onChange={(e) => setPostTags(e.target.value)}
             disabled={isPosting}
           />
 
           <div>
-            <p className="text-xs font-medium text-gray-600 mb-2">
+            <p className="text-xs font-medium text-[var(--muted)] mb-2">
               Who can see this? (any checked audience can view — combined with OR)
             </p>
-            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-800">
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-[var(--foreground)]">
               <label className="inline-flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={visPublic}
                   onChange={(e) => setVisPublic(e.target.checked)}
                   disabled={isPosting}
-                  className="rounded border-gray-300"
+                  className="rounded border-[var(--border)]"
                 />
                 Everyone
               </label>
@@ -324,7 +324,7 @@ export default function Feed({
                   checked={visConnections}
                   onChange={(e) => setVisConnections(e.target.checked)}
                   disabled={isPosting}
-                  className="rounded border-gray-300"
+                  className="rounded border-[var(--border)]"
                 />
                 Connections
               </label>
@@ -334,7 +334,7 @@ export default function Feed({
                   checked={visPrivate}
                   onChange={(e) => setVisPrivate(e.target.checked)}
                   disabled={isPosting}
-                  className="rounded border-gray-300"
+                  className="rounded border-[var(--border)]"
                 />
                 Only me
               </label>
@@ -342,7 +342,7 @@ export default function Feed({
             {myGroups.length > 0 && (
               <div className="mt-3 pt-3 border-t border-[var(--border)]">
                 <p className="text-xs text-[var(--muted)] mb-2">Your groups</p>
-                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-800">
+                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-[var(--foreground)]">
                   {myGroups.map((g) => (
                     <label
                       key={g.id}
@@ -358,7 +358,7 @@ export default function Feed({
                           }))
                         }
                         disabled={isPosting}
-                        className="rounded border-gray-300 shrink-0"
+                        className="rounded border-[var(--border)] shrink-0"
                       />
                       <span className="truncate">{g.name}</span>
                     </label>
@@ -395,7 +395,7 @@ export default function Feed({
             className={`text-xs px-3 py-1.5 rounded-full border font-medium transition ${
               feedGroupFilter === "all"
                 ? "bg-[var(--brand)] text-white border-[var(--brand)]"
-                : "bg-white text-gray-700 border-[var(--border)] hover:bg-gray-50"
+                : "bg-[var(--pill-inactive-bg)] text-[var(--pill-inactive-text)] border-[var(--border)] hover:bg-[var(--pill-inactive-hover)]"
             }`}
           >
             All
@@ -409,7 +409,7 @@ export default function Feed({
               className={`text-xs px-3 py-1.5 rounded-full border font-medium transition max-w-[10rem] truncate ${
                 feedGroupFilter === g.id
                   ? "bg-[var(--brand)] text-white border-[var(--brand)]"
-                  : "bg-white text-gray-700 border-[var(--border)] hover:bg-gray-50"
+                  : "bg-[var(--pill-inactive-bg)] text-[var(--pill-inactive-text)] border-[var(--border)] hover:bg-[var(--pill-inactive-hover)]"
               }`}
             >
               {g.name}
@@ -421,7 +421,7 @@ export default function Feed({
       {/* Filter / search */}
       {posts.length > 0 && (
         <details className="mb-4 card-surface shadow-sm group">
-          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium text-gray-800 hover:bg-gray-50/80 rounded-[var(--radius-card)] [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--hit-hover)] rounded-[var(--radius-card)] [&::-webkit-details-marker]:hidden">
             <Filter className="w-4 h-4 text-[var(--muted)]" />
             Search and filter posts
             <span className="ml-auto text-xs font-normal text-[var(--muted)] group-open:hidden">
@@ -431,7 +431,7 @@ export default function Feed({
           <div className="px-4 pb-4 pt-0 space-y-3 border-t border-[var(--border)]">
           <div className="flex flex-col sm:flex-row gap-3 pt-3">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label className="block text-xs font-medium text-[var(--muted)] mb-1">
                 Filter by tags
               </label>
               <input
@@ -439,15 +439,15 @@ export default function Feed({
                 value={tagFilter}
                 onChange={(e) => setTagFilter(e.target.value)}
                 placeholder='e.g. cs — or "cs, ml" for posts with both tags'
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm input-surface focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/40"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-[var(--muted)] mt-1">
                 Matches tag names exactly (not case-sensitive). Use commas for
                 multiple tags (all must match).
               </p>
             </div>
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-600 mb-1">
+              <label className="block text-xs font-medium text-[var(--muted)] mb-1">
                 Search in title or content
               </label>
               <input
@@ -455,13 +455,13 @@ export default function Feed({
                 value={textSearch}
                 onChange={(e) => setTextSearch(e.target.value)}
                 placeholder="Search words in posts…"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-[var(--border)] rounded-lg text-sm input-surface focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/40"
               />
             </div>
           </div>
           {allTagsInFeed.length > 0 && (
             <div>
-              <span className="text-xs font-medium text-gray-600 mr-2">
+              <span className="text-xs font-medium text-[var(--muted)] mr-2">
                 Quick tags:
               </span>
               <div className="flex flex-wrap gap-2 mt-1">
@@ -487,8 +487,8 @@ export default function Feed({
                     }}
                     className={`text-xs px-2.5 py-1 rounded-full border transition ${
                       tagTerms.includes(tag.toLowerCase())
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                        ? "bg-[var(--brand)] text-white border-[var(--brand)]"
+                        : "bg-[var(--pill-inactive-bg)] text-[var(--pill-inactive-text)] border-[var(--border)] hover:bg-[var(--pill-inactive-hover)]"
                     }`}
                   >
                     #{tag}
@@ -498,7 +498,7 @@ export default function Feed({
             </div>
           )}
           {(tagFilter.trim() || textSearch.trim() || feedGroupFilter !== "all") && (
-            <div className="flex items-center justify-between text-sm text-gray-600">
+            <div className="flex items-center justify-between text-sm text-[var(--muted)]">
               <span>
                 Showing {displayedPosts.length} of {posts.length} posts
                 {feedGroupFilter !== "all" && " (group filter active)"}
@@ -558,7 +558,7 @@ export default function Feed({
             return (
               <article
                 key={post.id}
-                className="card-surface p-4 sm:p-5 shadow-sm hover:border-gray-300/80 transition-colors"
+                className="card-surface p-4 sm:p-5 shadow-sm hover:border-[var(--brand)]/25 transition-colors"
               >
                 <div className="flex items-start gap-3">
                   {post.authorId != null ? (
@@ -582,19 +582,19 @@ export default function Feed({
                         {post.authorId != null ? (
                           <Link
                             href={`/profile/${post.authorId}`}
-                            className="font-semibold text-gray-900 hover:text-blue-600 hover:underline"
+                            className="font-semibold text-[var(--foreground)] hover:text-[var(--brand)] hover:underline"
                           >
                             {post.author}
                           </Link>
                         ) : (
-                          <h3 className="font-semibold text-gray-900">
+                          <h3 className="font-semibold text-[var(--foreground)]">
                             {post.author}
                           </h3>
                         )}
-                        <p className="text-sm text-gray-600">{post.major}</p>
+                        <p className="text-sm text-[var(--muted)]">{post.major}</p>
                       </div>
                       <div className="text-right">
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-[var(--muted)]">
                           {post.timestamp}
                         </span>
                         {visibilityBadge(post)}
@@ -605,18 +605,15 @@ export default function Feed({
                       className="block mt-2 hover:opacity-90 transition"
                     >
                       {post.title && (
-                        <h4 className="text-lg font-semibold text-gray-900">
+                        <h4 className="text-lg font-semibold text-[var(--foreground)]">
                           {post.title}
                         </h4>
                       )}
-                      <p className="mt-1 text-gray-800 line-clamp-3">{post.content}</p>
+                      <p className="mt-1 text-[var(--foreground)]/90 line-clamp-3">{post.content}</p>
                       {post.tags && post.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-3">
                           {post.tags.slice(0, 4).map((tag, index) => (
-                            <span
-                              key={index}
-                              className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md text-xs font-medium"
-                            >
+                            <span key={index} className="chip-tag">
                               #{tag}
                             </span>
                           ))}
@@ -630,8 +627,8 @@ export default function Feed({
                         disabled={currentUserId == null || likingId === post.id}
                         className={`inline-flex items-center gap-1.5 px-2 py-2 rounded-lg min-h-[40px] transition disabled:opacity-50 ${
                           liked
-                            ? "text-red-600 font-medium"
-                            : "hover:bg-gray-50 hover:text-gray-900"
+                            ? "text-red-600 dark:text-red-400 font-medium"
+                            : "hover:bg-[var(--hit-hover)] hover:text-[var(--foreground)]"
                         }`}
                         aria-label={liked ? "Unlike" : "Like"}
                       >
@@ -642,7 +639,7 @@ export default function Feed({
                       </button>
                       <Link
                         href={`/post/${post.id}`}
-                        className="inline-flex items-center gap-1.5 px-2 py-2 rounded-lg min-h-[40px] hover:bg-gray-50 hover:text-[var(--brand)]"
+                        className="inline-flex items-center gap-1.5 px-2 py-2 rounded-lg min-h-[40px] hover:bg-[var(--hit-hover)] hover:text-[var(--brand)]"
                       >
                         <MessageCircle className="w-4 h-4" />
                         <span>{post.comments}</span>
@@ -650,7 +647,7 @@ export default function Feed({
                       <button
                         type="button"
                         onClick={() => handleShare(post.id)}
-                        className="inline-flex items-center gap-1.5 px-2 py-2 rounded-lg min-h-[40px] hover:bg-gray-50 hover:text-[var(--brand)]"
+                        className="inline-flex items-center gap-1.5 px-2 py-2 rounded-lg min-h-[40px] hover:bg-[var(--hit-hover)] hover:text-[var(--brand)]"
                         aria-label="Copy link"
                       >
                         <Share2 className="w-4 h-4" />

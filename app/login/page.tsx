@@ -45,7 +45,7 @@ export default function LoginPage() {
           height={72}
           className="rounded-xl mx-auto mb-5"
         />
-        <h1 className="text-xl font-bold text-gray-900 mb-1 tracking-tight">
+        <h1 className="text-xl font-bold text-[var(--foreground)] mb-1 tracking-tight">
           ScottyLinked
         </h1>
         <p className="text-[var(--muted)] text-sm mb-6">
