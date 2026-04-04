@@ -52,10 +52,12 @@ export type ConversationPreview = {
 };
 
 export async function listConversationPreviews(
-  userId: number
+  userId: number,
+  rowLimit: number = 50
 ): Promise<ConversationPreview[]> {
   if (!supabaseAdmin) return [];
   const db = supabaseAdmin;
+  const cap = Math.min(Math.max(rowLimit, 1), 50);
 
   const { data: convs, error } = await db
     .from("conversations")
@@ -64,7 +66,7 @@ export async function listConversationPreviews(
       `participant_low_id.eq.${userId},participant_high_id.eq.${userId}`
     )
     .order("updated_at", { ascending: false })
-    .limit(50);
+    .limit(cap);
 
   if (error || !convs?.length) return [];
 
@@ -160,42 +162,78 @@ export function userIsInConversation(
   return participants.low === userId || participants.high === userId;
 }
 
-export async function listMessagesForConversation(
-  conversationId: number,
-  _userId: number,
-  limit: number = 80
-): Promise<
-  Array<{
-    id: number;
-    senderId: number;
-    body: string;
-    createdAt: string;
-  }>
-> {
-  if (!supabaseAdmin) return [];
+export type ThreadMessageRow = {
+  id: number;
+  senderId: number;
+  body: string;
+  createdAt: string;
+};
 
-  const { data: msgs, error } = await supabaseAdmin
-    .from("direct_messages")
-    .select("id, sender_id, body, created_at")
-    .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true })
-    .limit(limit);
-
-  if (error || !msgs) return [];
-
-  return (msgs as Record<string, unknown>[]).map((m) => ({
+function mapThreadMessageRow(m: Record<string, unknown>): ThreadMessageRow {
+  return {
     id: m.id as number,
     senderId: m.sender_id as number,
     body: (m.body as string) ?? "",
     createdAt: (m.created_at as string) ?? "",
-  }));
+  };
+}
+
+/** Newest-first page: returns chronological order (oldest → newest in array). */
+export async function listRecentMessagesForConversation(
+  conversationId: number,
+  limit: number
+): Promise<{ messages: ThreadMessageRow[]; hasOlder: boolean }> {
+  if (!supabaseAdmin) return { messages: [], hasOlder: false };
+  const take = Math.min(Math.max(limit, 1), 100);
+  const { data: msgs, error } = await supabaseAdmin
+    .from("direct_messages")
+    .select("id, sender_id, body, created_at")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: false })
+    .limit(take + 1);
+
+  if (error || !msgs) return { messages: [], hasOlder: false };
+  const rows = msgs as Record<string, unknown>[];
+  const hasOlder = rows.length > take;
+  const slice = hasOlder ? rows.slice(0, take) : rows;
+  const messages = slice.map(mapThreadMessageRow).reverse();
+  return { messages, hasOlder };
+}
+
+/** Messages strictly older than `beforeCreatedAt` (ISO), newest of that batch last in array. */
+export async function listOlderMessagesForConversation(
+  conversationId: number,
+  beforeCreatedAt: string,
+  limit: number
+): Promise<{ messages: ThreadMessageRow[]; hasOlder: boolean }> {
+  if (!supabaseAdmin) return { messages: [], hasOlder: false };
+  const take = Math.min(Math.max(limit, 1), 100);
+  const { data: msgs, error } = await supabaseAdmin
+    .from("direct_messages")
+    .select("id, sender_id, body, created_at")
+    .eq("conversation_id", conversationId)
+    .lt("created_at", beforeCreatedAt)
+    .order("created_at", { ascending: false })
+    .limit(take + 1);
+
+  if (error || !msgs) return { messages: [], hasOlder: false };
+  const rows = msgs as Record<string, unknown>[];
+  const hasOlder = rows.length > take;
+  const slice = hasOlder ? rows.slice(0, take) : rows;
+  const messages = slice.map(mapThreadMessageRow).reverse();
+  return { messages, hasOlder };
 }
 
 export async function insertDirectMessage(params: {
   conversationId: number;
   senderId: number;
   body: string;
-}): Promise<{ id: number } | null> {
+}): Promise<{
+  id: number;
+  senderId: number;
+  body: string;
+  createdAt: string;
+} | null> {
   if (!supabaseAdmin) return null;
   const body = params.body.trim().slice(0, 8000);
   if (!body) return null;
@@ -225,17 +263,29 @@ export async function insertDirectMessage(params: {
       sender_id: params.senderId,
       body,
     })
-    .select("id")
+    .select("id, sender_id, body, created_at")
     .single();
 
   if (error || !data) return null;
+
+  const inserted = data as {
+    id: number;
+    sender_id: number;
+    body: string;
+    created_at: string;
+  };
 
   await supabaseAdmin
     .from("conversations")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", params.conversationId);
 
-  return { id: (data as { id: number }).id };
+  return {
+    id: inserted.id,
+    senderId: inserted.sender_id,
+    body: inserted.body,
+    createdAt: inserted.created_at,
+  };
 }
 
 export async function markMessagesRead(

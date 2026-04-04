@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { headers } from "next/headers";
 import "./globals.css";
 import MobileTabBar from "./_components/MobileTabBar";
 import AppNavbar from "./_components/AppNavbar";
+import { HomeTabNavProvider } from "./_components/HomeTabNav";
 import { getServerMe } from "@/lib/session";
+import { tabFromSearchString } from "@/lib/homeTab";
 
 export const metadata: Metadata = {
   title: "ScottyLinked",
@@ -16,6 +18,14 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const me = await getServerMe();
+  const h = await headers();
+  const pathnameFromMw = h.get("x-pathname") ?? "";
+  const searchFromMw = h.get("x-url-search") ?? "";
+  const initialHomeTab =
+    pathnameFromMw === "/"
+      ? tabFromSearchString(searchFromMw)
+      : ("feed" as const);
+
   const initialNavUser = me.appUser
     ? {
         id: me.appUser.id,
@@ -37,11 +47,11 @@ export default async function RootLayout({
         />
       </head>
       <body className="antialiased min-h-screen bg-[var(--page)] text-[var(--foreground)]">
-        <AppNavbar initialAppUser={initialNavUser} />
-        {children}
-        <Suspense fallback={null}>
+        <HomeTabNavProvider initialHomeTab={initialHomeTab}>
+          <AppNavbar initialAppUser={initialNavUser} />
+          {children}
           <MobileTabBar />
-        </Suspense>
+        </HomeTabNavProvider>
       </body>
     </html>
   );

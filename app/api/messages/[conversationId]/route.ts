@@ -8,9 +8,11 @@ import { getUserById } from "@/lib/db/users";
 import {
   getConversationParticipants,
   insertDirectMessage,
-  listMessagesForConversation,
+  listOlderMessagesForConversation,
+  listRecentMessagesForConversation,
   markMessagesRead,
   userIsInConversation,
+  type ThreadMessageRow,
 } from "@/lib/db/messaging";
 import { insertNotification } from "@/lib/db/notifications";
 import { NextResponse } from "next/server";
@@ -27,9 +29,9 @@ async function getCurrentAppUserId(): Promise<number | null> {
   return appUser?.id ?? null;
 }
 
-/** GET: messages in thread */
+/** GET: messages in thread. Query: `recent` (default 35, max 100), `before` (ISO created_at) for older page. */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ conversationId: string }> }
 ) {
   const uid = await getCurrentAppUserId();
@@ -49,8 +51,26 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const messages = await listMessagesForConversation(id, uid);
-  await markMessagesRead(id, uid);
+  const url = new URL(request.url);
+  const recent = Math.min(
+    Math.max(parseInt(url.searchParams.get("recent") || "35", 10), 1),
+    100
+  );
+  const before = url.searchParams.get("before")?.trim();
+
+  let messages: ThreadMessageRow[];
+  let hasOlder: boolean;
+
+  if (before) {
+    const page = await listOlderMessagesForConversation(id, before, recent);
+    messages = page.messages;
+    hasOlder = page.hasOlder;
+  } else {
+    const page = await listRecentMessagesForConversation(id, recent);
+    messages = page.messages;
+    hasOlder = page.hasOlder;
+    void markMessagesRead(id, uid);
+  }
 
   const otherId =
     participants.low === uid ? participants.high : participants.low;
@@ -58,6 +78,7 @@ export async function GET(
 
   return NextResponse.json({
     messages,
+    hasOlder,
     otherUser: other
       ? {
           id: other.id,
@@ -128,5 +149,13 @@ export async function POST(
     });
   }
 
-  return NextResponse.json({ ok: true, id: result.id });
+  return NextResponse.json({
+    ok: true,
+    message: {
+      id: result.id,
+      senderId: result.senderId,
+      body: result.body,
+      createdAt: result.createdAt,
+    },
+  });
 }

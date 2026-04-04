@@ -1,15 +1,20 @@
 "use client";
 
-/** Home tabs: URL-driven `tab=`, data from RSC bootstrap + `/api/home` on auth/mutations. */
+/** Home tabs: client `?tab=` via HomeTabNavProvider; data from RSC bootstrap + `/api/home` on auth/mutations. */
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  startTransition,
+} from "react";
 import Feed from "./feed";
 import GroupsBrowse from "./groups";
 import Network from "./network";
 import ProfileView from "./profileview";
 import AppShell from "./AppShell";
 import HomeRail from "./HomeRail";
+import { useHomeTab } from "./HomeTabNav";
 import type { FeedPost, GroupListItem, Profile, UserProfile } from "@/lib/types";
 import type { HomeBootstrap } from "@/lib/home/bootstrap";
 import { createClient } from "@/lib/supabase/client";
@@ -47,22 +52,7 @@ export default function HomePageClient({
 }: {
   initial: HomeBootstrap;
 }) {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const tabParam = searchParams.get("tab");
-
-  React.useEffect(() => {
-    if (tabParam === "opportunities") {
-      router.replace("/?tab=groups");
-    }
-  }, [tabParam, router]);
-
-  const activeTab: "feed" | "groups" | "network" | "profile" =
-    tabParam === "groups" || tabParam === "network" || tabParam === "profile"
-      ? tabParam
-      : tabParam === "opportunities"
-        ? "groups"
-        : "feed";
+  const { activeHomeTab: activeTab } = useHomeTab();
 
   const seeded = bootstrapToState(initial);
   const [posts, setPosts] = useState<FeedPost[]>(seeded.posts);
@@ -71,7 +61,7 @@ export default function HomePageClient({
   const [userProfile, setUserProfile] = useState<UserProfile | null>(
     seeded.userProfile
   );
-  const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [connectedIds, setConnectedIds] = useState<number[]>(seeded.connectedIds);
   const [myGroups, setMyGroups] = useState<{ id: number; name: string }[]>(
     seeded.myGroups
@@ -88,23 +78,25 @@ export default function HomePageClient({
       userProfile.major === "Undeclared");
 
   const refreshHome = useCallback(async () => {
-    setLoading(true);
+    setIsRefreshing(true);
     try {
       const res = await fetch("/api/home", { credentials: "include" });
       if (!res.ok) return;
       const data = (await res.json()) as HomeBootstrap;
       const s = bootstrapToState(data);
-      setPosts(s.posts);
-      setGroups(s.groups);
-      setProfiles(s.profiles);
-      setUserProfile(s.userProfile);
-      setConnectedIds(s.connectedIds);
-      setMyGroups(s.myGroups);
-      setAppUser(s.appUser);
+      startTransition(() => {
+        setPosts(s.posts);
+        setGroups(s.groups);
+        setProfiles(s.profiles);
+        setUserProfile(s.userProfile);
+        setConnectedIds(s.connectedIds);
+        setMyGroups(s.myGroups);
+        setAppUser(s.appUser);
+      });
     } catch (e) {
       console.error("refreshHome:", e);
     } finally {
-      setLoading(false);
+      setIsRefreshing(false);
     }
   }, []);
 
@@ -139,8 +131,24 @@ export default function HomePageClient({
     await refreshHome();
   }, [refreshHome]);
 
+  const panelWrap = (tab: typeof activeTab, node: React.ReactNode) => (
+    <div
+      className={activeTab !== tab ? "hidden" : undefined}
+      aria-hidden={activeTab !== tab}
+    >
+      {node}
+    </div>
+  );
+
   return (
     <>
+      {isRefreshing && (
+        <div
+          className="fixed top-14 left-0 right-0 z-[45] h-0.5 bg-[var(--brand)]/50 motion-safe:animate-pulse pointer-events-none"
+          aria-hidden
+        />
+      )}
+
       {authError && (
         <div className="bg-amber-100 border-b border-amber-300 text-amber-900 px-4 py-2 text-center text-sm flex items-center justify-center gap-2">
           <span>{authError}</span>
@@ -165,36 +173,40 @@ export default function HomePageClient({
           ) : undefined
         }
       >
-        {activeTab === "feed" && (
+        {panelWrap(
+          "feed",
           <Feed
             posts={posts}
-            loading={loading}
+            loading={false}
             onPostCreated={refreshHome}
             currentUserId={currentUserId}
             myGroups={myGroups}
           />
         )}
-        {activeTab === "groups" && (
+        {panelWrap(
+          "groups",
           <GroupsBrowse
             groups={groups}
-            loading={loading}
+            loading={false}
             currentUserId={currentUserId}
             onGroupCreated={refreshHome}
           />
         )}
-        {activeTab === "network" && (
+        {panelWrap(
+          "network",
           <Network
             profiles={profiles}
-            loading={loading}
+            loading={false}
             connectedIds={connectedIds}
             currentUserId={currentUserId}
             onConnectionCreated={refreshHome}
           />
         )}
-        {activeTab === "profile" && (
+        {panelWrap(
+          "profile",
           <ProfileView
             user={userProfile}
-            loading={loading}
+            loading={false}
             onProfileUpdated={onProfileUpdated}
           />
         )}

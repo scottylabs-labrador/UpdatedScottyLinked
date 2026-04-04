@@ -4,6 +4,7 @@ import Link from "next/link";
 import Avatar from "./Avatar";
 import { Users, MessageCircle, UserRound, LogOut, Shield } from "lucide-react";
 import { signOut } from "@/app/auth/login/actions";
+import { useHomeTab } from "./HomeTabNav";
 
 type HomeRailProps = {
   user: {
@@ -21,11 +22,14 @@ export default function HomeRail({
   profileIncomplete,
   isModerator,
 }: HomeRailProps) {
+  const { setHomeTab } = useHomeTab();
+
   return (
     <div className="space-y-4">
-      <Link
-        href="/?tab=profile"
-        className="card-surface p-4 shadow-sm block hover:border-[var(--brand)]/25 transition-colors"
+      <button
+        type="button"
+        onClick={() => setHomeTab("profile")}
+        className="card-surface p-4 shadow-sm block hover:border-[var(--brand)]/25 transition-colors w-full text-left"
       >
         <div className="flex items-center gap-3">
           <Avatar
@@ -38,7 +42,7 @@ export default function HomeRail({
             <p className="text-xs text-[var(--muted)] truncate">@{user.handle}</p>
           </div>
         </div>
-      </Link>
+      </button>
 
       {profileIncomplete && (
         <div className="rounded-[var(--radius-card)] border border-amber-200 bg-amber-50/80 p-4 text-sm">
@@ -46,12 +50,13 @@ export default function HomeRail({
           <p className="text-amber-800/90 mt-1 text-xs">
             Add your major and bio so people can find you on Network.
           </p>
-          <Link
-            href="/?tab=profile"
+          <button
+            type="button"
+            onClick={() => setHomeTab("profile")}
             className="mt-2 inline-flex font-medium text-[var(--brand)] text-sm hover:underline"
           >
             Go to Profile tab
-          </Link>
+          </button>
         </div>
       )}
 
@@ -59,13 +64,14 @@ export default function HomeRail({
         <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
           Shortcuts
         </p>
-        <Link
-          href="/?tab=network"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-800 hover:bg-gray-50 transition"
+        <button
+          type="button"
+          onClick={() => setHomeTab("network")}
+          className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-800 hover:bg-gray-50 transition text-left"
         >
           <Users className="w-5 h-5 text-[var(--muted)]" />
           Network
-        </Link>
+        </button>
         <Link
           href="/messages"
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-800 hover:bg-gray-50 transition"

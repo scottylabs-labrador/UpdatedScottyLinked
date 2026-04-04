@@ -1,9 +1,15 @@
 "use client";
 
-import React, { Suspense, useState, useEffect, useRef } from "react";
+import React, {
+  Suspense,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   MessageCircle,
@@ -15,6 +21,8 @@ import {
 import logo from "../147268137.png";
 import { signInWithGoogle } from "@/app/auth/login/actions";
 import { createClient } from "@/lib/supabase/client";
+import { useHomeTab } from "./HomeTabNav";
+import type { HomeTab } from "@/lib/homeTab";
 
 interface AppUser {
   id: number;
@@ -30,7 +38,8 @@ function AppNavbarInner({
   initialAppUser: AppUser | null;
 }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { activeHomeTab, setHomeTab } = useHomeTab();
   const [appUser, setAppUser] = useState<AppUser | null>(initialAppUser);
   const [authLoading, setAuthLoading] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -46,34 +55,33 @@ function AppNavbarInner({
     unread: number;
   } | null>(null);
 
-  const loadNotifications = () => {
+  const loadNotifications = useCallback(() => {
     fetch("/api/notifications", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (data.items) setNotifData(data);
       })
       .catch(() => {});
-  };
+  }, []);
 
-  const tab = pathname === "/" ? searchParams.get("tab") : null;
-  const activeTab =
-    tab === "groups" || tab === "network" || tab === "profile"
-      ? tab
-      : tab === "opportunities"
-        ? "groups"
-        : "feed";
   const onMessages = pathname.startsWith("/messages");
   const onAdmin = pathname.startsWith("/admin");
 
-  const isHomeTabActive = (t: string) =>
+  const isHomeTabActive = (t: HomeTab) =>
     pathname === "/" &&
     !onMessages &&
     !onAdmin &&
-    (t === "feed" ? activeTab === "feed" : activeTab === t);
+    (t === "feed" ? activeHomeTab === "feed" : activeHomeTab === t);
 
   useEffect(() => {
     setAppUser(initialAppUser);
   }, [initialAppUser]);
+
+  useEffect(() => {
+    if (!appUser) return;
+    router.prefetch("/");
+    router.prefetch("/messages");
+  }, [appUser, router]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -105,9 +113,31 @@ function AppNavbarInner({
       return;
     }
     loadNotifications();
-    const id = setInterval(loadNotifications, 60_000);
+    const id = setInterval(loadNotifications, 120_000);
     return () => clearInterval(id);
-  }, [appUser]);
+  }, [appUser, loadNotifications]);
+
+  useEffect(() => {
+    if (!appUser) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`notifications-${appUser.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${appUser.id}`,
+        },
+        () => loadNotifications()
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [appUser, loadNotifications]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -137,42 +167,74 @@ function AppNavbarInner({
     if (result.url) window.location.href = result.url;
   };
 
-  const navPill = (
-    href: string,
+  const navHomePill = (
+    tab: HomeTab,
     label: string,
     Icon: React.ComponentType<{ className?: string }>,
     active: boolean
-  ) => (
-    <Link
-      href={href}
-      className={`inline-flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[40px] ${
-        active
-          ? "text-[var(--brand)] bg-blue-50"
-          : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-      }`}
-    >
-      <Icon className="w-4 h-4 shrink-0 opacity-80" />
-      <span className="hidden xl:inline">{label}</span>
-    </Link>
-  );
+  ) => {
+    const className = `inline-flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[40px] ${
+      active
+        ? "text-[var(--brand)] bg-blue-50"
+        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+    }`;
+    const href = tab === "feed" ? "/" : `/?tab=${tab}`;
+    if (pathname === "/") {
+      return (
+        <button
+          type="button"
+          onClick={() => setHomeTab(tab)}
+          className={className}
+        >
+          <Icon className="w-4 h-4 shrink-0 opacity-80" />
+          <span className="hidden xl:inline">{label}</span>
+        </button>
+      );
+    }
+    return (
+      <Link href={href} className={className}>
+        <Icon className="w-4 h-4 shrink-0 opacity-80" />
+        <span className="hidden xl:inline">{label}</span>
+      </Link>
+    );
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--surface)]/95 backdrop-blur-md">
       <div className="max-w-[1128px] mx-auto px-3 sm:px-4 lg:px-6">
         <div className="flex h-14 items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink-0">
-            <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
-              <Image
-                src={logo}
-                alt="ScottyLinked"
-                width={36}
-                height={36}
-                className="rounded-lg object-cover"
-              />
-              <span className="text-lg font-bold text-gray-900 hidden sm:inline truncate">
-                ScottyLinked
-              </span>
-            </Link>
+            {pathname === "/" ? (
+              <button
+                type="button"
+                onClick={() => setHomeTab("feed")}
+                className="flex items-center gap-2 sm:gap-3 shrink-0 rounded-lg"
+              >
+                <Image
+                  src={logo}
+                  alt="ScottyLinked"
+                  width={36}
+                  height={36}
+                  className="rounded-lg object-cover"
+                />
+                <span className="text-lg font-bold text-gray-900 hidden sm:inline truncate">
+                  ScottyLinked
+                </span>
+              </button>
+            ) : (
+              <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
+                <Image
+                  src={logo}
+                  alt="ScottyLinked"
+                  width={36}
+                  height={36}
+                  className="rounded-lg object-cover"
+                />
+                <span className="text-lg font-bold text-gray-900 hidden sm:inline truncate">
+                  ScottyLinked
+                </span>
+              </Link>
+            )}
           </div>
 
           {/* Desktop primary nav — hidden on small screens (use MobileTabBar) */}
@@ -180,21 +242,22 @@ function AppNavbarInner({
             className="hidden md:flex items-center justify-center gap-0.5 flex-1 min-w-0 px-2"
             aria-label="Main"
           >
-            {navPill("/", "Feed", Home, isHomeTabActive("feed"))}
-            {navPill(
-              "/?tab=groups",
+            {navHomePill("feed", "Feed", Home, isHomeTabActive("feed"))}
+            {navHomePill(
+              "groups",
               "Groups",
               Briefcase,
               isHomeTabActive("groups")
             )}
-            {navPill(
-              "/?tab=network",
+            {navHomePill(
+              "network",
               "Network",
               Users,
               isHomeTabActive("network")
             )}
             <Link
               href="/messages"
+              prefetch
               className={`inline-flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[40px] ${
                 onMessages
                   ? "text-[var(--brand)] bg-blue-50"

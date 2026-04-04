@@ -22,13 +22,18 @@ async function getCurrentAppUserId(): Promise<number | null> {
   return appUser?.id ?? null;
 }
 
-/** GET: inbox previews */
-export async function GET() {
+/** GET: inbox previews. Query `limit` (1–50, default 50). */
+export async function GET(request: Request) {
   const uid = await getCurrentAppUserId();
   if (uid == null) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const conversations = await listConversationPreviews(uid);
+  const url = new URL(request.url);
+  const limit = Math.min(
+    Math.max(parseInt(url.searchParams.get("limit") || "50", 10), 1),
+    50
+  );
+  const conversations = await listConversationPreviews(uid, limit);
   return NextResponse.json({ conversations });
 }
 

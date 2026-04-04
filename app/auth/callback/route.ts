@@ -81,7 +81,12 @@ export async function GET(request: NextRequest) {
     null;
 
   try {
-    await ensureAppUser({ handle, fullName, photoURL });
+    await ensureAppUser({
+      handle,
+      fullName,
+      photoURL,
+      authUserId: data.user?.id ?? null,
+    });
     log("ensureAppUser done");
   } catch (err) {
     console.error("ensureAppUser failed (user still logged in):", err);

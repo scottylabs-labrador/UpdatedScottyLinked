@@ -40,6 +40,7 @@ export async function createAppUser(params: {
   handle: string;
   fullName: string;
   photoURL?: string | null;
+  authUserId?: string | null;
 }): Promise<User | null> {
   if (!supabaseAdmin) return null;
 
@@ -50,6 +51,7 @@ export async function createAppUser(params: {
       handle: params.handle,
       fullname: params.fullName,
       photourl: params.photoURL ?? null,
+      auth_user_id: params.authUserId ?? null,
       bannerurl: null,
       major: null,
       minors: null,
@@ -147,8 +149,20 @@ export async function ensureAppUser(params: {
   handle: string;
   fullName: string;
   photoURL?: string | null;
+  authUserId?: string | null;
 }): Promise<User | null> {
   const existing = await getAppUserByHandle(params.handle);
-  if (existing) return existing;
+  if (existing) {
+    if (params.authUserId && supabaseAdmin) {
+      await supabaseAdmin
+        .from("users")
+        .update({
+          auth_user_id: params.authUserId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id);
+    }
+    return existing;
+  }
   return createAppUser(params);
 }
